@@ -1,0 +1,875 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ACM Tasaciones — Matías Faginoli</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --verde: #2D5A45;
+    --verde-medio: #3D7A5E;
+    --verde-claro: #EAF4EE;
+    --gris-fondo: #F0EFED;
+    --gris-claro: #E8E6E3;
+    --gris-borde: #D5D2CE;
+    --negro: #1A1A1A;
+    --gris-texto: #555;
+    --blanco: #fff;
+    --rojo: #C0392B;
+    --amarillo: #E8A020;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--gris-fondo); color: var(--negro); min-height: 100vh; }
+
+  /* ── LOGIN ── */
+  #login-screen {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--verde);
+    position: relative;
+    overflow: hidden;
+  }
+  #login-screen::before {
+    content: '';
+    position: absolute;
+    top: -100px; right: -100px;
+    width: 500px; height: 500px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.04);
+  }
+  #login-screen::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: -80px;
+    width: 350px; height: 350px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.03);
+  }
+  .login-card {
+    background: var(--blanco);
+    border-radius: 4px;
+    padding: 48px 52px;
+    width: 420px;
+    position: relative;
+    z-index: 1;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+  }
+  .login-logo {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 13px;
+    font-weight: 400;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--verde);
+    margin-bottom: 8px;
+  }
+  .login-title {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 32px;
+    font-weight: 300;
+    color: var(--negro);
+    margin-bottom: 32px;
+    line-height: 1.2;
+  }
+  .login-title span { color: var(--verde); font-style: italic; }
+  .form-group { margin-bottom: 20px; }
+  .form-group label { display: block; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gris-texto); margin-bottom: 8px; }
+  .form-group input {
+    width: 100%; padding: 12px 16px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 14px;
+    color: var(--negro);
+    background: var(--gris-fondo);
+    transition: border-color 0.2s;
+    outline: none;
+  }
+  .form-group input:focus { border-color: var(--verde); background: var(--blanco); }
+  .btn-primary {
+    width: 100%; padding: 14px;
+    background: var(--verde);
+    color: var(--blanco);
+    border: none; border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; font-weight: 500;
+    letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer;
+    transition: background 0.2s;
+    margin-top: 8px;
+  }
+  .btn-primary:hover { background: var(--verde-medio); }
+  .login-error { color: var(--rojo); font-size: 12px; margin-top: 12px; display: none; }
+
+  /* ── APP ── */
+  #app { display: none; min-height: 100vh; }
+
+  /* SIDEBAR */
+  .sidebar {
+    position: fixed; left: 0; top: 0; bottom: 0;
+    width: 240px;
+    background: var(--verde);
+    display: flex; flex-direction: column;
+    z-index: 100;
+  }
+  .sidebar-logo {
+    padding: 28px 24px 24px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+  }
+  .sidebar-logo-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 18px; font-weight: 600;
+    color: var(--blanco); letter-spacing: 0.5px;
+  }
+  .sidebar-logo-sub {
+    font-size: 10px; letter-spacing: 2px;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-top: 2px;
+  }
+  .sidebar-nav { flex: 1; padding: 16px 0; }
+  .nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 24px;
+    color: rgba(255,255,255,0.65);
+    font-size: 13px; font-weight: 400;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-left: 3px solid transparent;
+  }
+  .nav-item:hover { color: var(--blanco); background: rgba(255,255,255,0.06); }
+  .nav-item.active { color: var(--blanco); background: rgba(255,255,255,0.1); border-left-color: var(--blanco); }
+  .nav-icon { font-size: 16px; width: 20px; text-align: center; }
+  .sidebar-user {
+    padding: 16px 24px;
+    border-top: 1px solid rgba(255,255,255,0.1);
+    display: flex; align-items: center; gap: 10px;
+  }
+  .user-avatar {
+    width: 32px; height: 32px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 13px; color: var(--blanco); font-weight: 500;
+  }
+  .user-info { flex: 1; }
+  .user-name { font-size: 12px; color: var(--blanco); font-weight: 500; }
+  .user-role { font-size: 10px; color: rgba(255,255,255,0.5); letter-spacing: 1px; text-transform: uppercase; }
+  .btn-logout { background: none; border: none; color: rgba(255,255,255,0.4); cursor: pointer; font-size: 14px; padding: 4px; transition: color 0.2s; }
+  .btn-logout:hover { color: var(--blanco); }
+
+  /* MAIN */
+  .main { margin-left: 240px; padding: 32px 40px; min-height: 100vh; }
+
+  /* HEADER */
+  .page-header { margin-bottom: 32px; }
+  .page-title { font-family: 'Cormorant Garamond', serif; font-size: 36px; font-weight: 300; color: var(--negro); }
+  .page-title span { color: var(--verde); font-style: italic; }
+  .page-sub { font-size: 13px; color: var(--gris-texto); margin-top: 4px; }
+
+  /* CARDS */
+  .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 32px; }
+  .stat-card {
+    background: var(--blanco);
+    border-radius: 2px;
+    padding: 20px 24px;
+    border: 1px solid var(--gris-borde);
+  }
+  .stat-label { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gris-texto); margin-bottom: 8px; }
+  .stat-value { font-family: 'Cormorant Garamond', serif; font-size: 32px; font-weight: 300; color: var(--verde); }
+  .stat-desc { font-size: 11px; color: var(--gris-texto); margin-top: 4px; }
+
+  /* TASACIONES LIST */
+  .section-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+  .section-title { font-family: 'Cormorant Garamond', serif; font-size: 22px; font-weight: 400; color: var(--negro); }
+  .btn-new {
+    display: flex; align-items: center; gap: 8px;
+    padding: 10px 20px;
+    background: var(--verde); color: var(--blanco);
+    border: none; border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 12px; font-weight: 500;
+    letter-spacing: 1px; text-transform: uppercase;
+    cursor: pointer; transition: background 0.2s;
+  }
+  .btn-new:hover { background: var(--verde-medio); }
+  .table-wrap { background: var(--blanco); border: 1px solid var(--gris-borde); border-radius: 2px; overflow: hidden; }
+  table { width: 100%; border-collapse: collapse; }
+  thead tr { background: var(--verde); }
+  thead th { padding: 12px 16px; text-align: left; font-size: 10px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--blanco); }
+  tbody tr { border-bottom: 1px solid var(--gris-claro); transition: background 0.15s; }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--gris-fondo); }
+  tbody td { padding: 14px 16px; font-size: 13px; color: var(--negro); }
+  .badge {
+    display: inline-block; padding: 3px 10px;
+    border-radius: 20px; font-size: 10px;
+    font-weight: 500; letter-spacing: 0.5px;
+  }
+  .badge-dpto { background: #EAF4EE; color: var(--verde); }
+  .badge-casa { background: #FFF3DC; color: #B7770D; }
+  .badge-lote { background: #EEF0FF; color: #3D52A0; }
+  .badge-proceso { background: #FFF3DC; color: #B7770D; }
+  .badge-completo { background: #EAF4EE; color: var(--verde); }
+  .btn-ver { background: none; border: 1px solid var(--gris-borde); padding: 5px 12px; border-radius: 2px; font-size: 11px; color: var(--gris-texto); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
+  .btn-ver:hover { border-color: var(--verde); color: var(--verde); }
+  .empty-state { padding: 48px; text-align: center; color: var(--gris-texto); }
+  .empty-icon { font-size: 32px; margin-bottom: 12px; }
+  .empty-text { font-size: 14px; }
+
+  /* ── MODAL NUEVA TASACIÓN ── */
+  .modal-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.5);
+    display: none; align-items: center; justify-content: center;
+    z-index: 200;
+  }
+  .modal-overlay.show { display: flex; }
+  .modal {
+    background: var(--blanco);
+    border-radius: 4px;
+    padding: 40px;
+    width: 520px;
+    max-height: 90vh;
+    overflow-y: auto;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+  }
+  .modal-title { font-family: 'Cormorant Garamond', serif; font-size: 28px; font-weight: 300; margin-bottom: 8px; }
+  .modal-sub { font-size: 13px; color: var(--gris-texto); margin-bottom: 28px; }
+  .modal-section { margin-bottom: 20px; }
+  .modal-section-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gris-texto); margin-bottom: 12px; font-weight: 500; }
+  .tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tipo-card {
+    border: 2px solid var(--gris-borde);
+    border-radius: 2px; padding: 16px;
+    cursor: pointer; transition: all 0.2s;
+    text-align: center;
+  }
+  .tipo-card:hover { border-color: var(--verde-medio); }
+  .tipo-card.selected { border-color: var(--verde); background: var(--verde-claro); }
+  .tipo-icon { font-size: 24px; margin-bottom: 6px; }
+  .tipo-name { font-size: 12px; font-weight: 500; color: var(--negro); }
+  .tipo-desc { font-size: 10px; color: var(--gris-texto); margin-top: 2px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .modal-actions { display: flex; gap: 12px; margin-top: 28px; }
+  .btn-cancel { flex: 1; padding: 12px; background: none; border: 1px solid var(--gris-borde); border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 13px; cursor: pointer; color: var(--gris-texto); transition: all 0.2s; }
+  .btn-cancel:hover { border-color: var(--negro); color: var(--negro); }
+  .btn-crear { flex: 2; padding: 12px; background: var(--verde); color: var(--blanco); border: none; border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500; cursor: pointer; transition: background 0.2s; letter-spacing: 0.5px; }
+  .btn-crear:hover { background: var(--verde-medio); }
+
+  /* ── OPERATIVO 1 ── */
+  #op1-screen { display: none; }
+  .op1-header { display: flex; align-items: flex-start; justify-content: space-between; margin-bottom: 28px; }
+  .btn-back { display: flex; align-items: center; gap: 6px; background: none; border: 1px solid var(--gris-borde); padding: 8px 16px; border-radius: 2px; font-size: 12px; color: var(--gris-texto); cursor: pointer; font-family: 'DM Sans', sans-serif; transition: all 0.2s; margin-bottom: 16px; }
+  .btn-back:hover { border-color: var(--verde); color: var(--verde); }
+  .op1-form {
+    background: var(--blanco);
+    border: 1px solid var(--gris-borde);
+    border-radius: 2px; padding: 28px; margin-bottom: 24px;
+  }
+  .op1-form-title { font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 400; margin-bottom: 20px; color: var(--verde); }
+  .form-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-grid-4 { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+  .form-field label { display: block; font-size: 10px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gris-texto); margin-bottom: 6px; font-weight: 500; }
+  .form-field input, .form-field select {
+    width: 100%; padding: 10px 12px;
+    border: 1px solid var(--gris-borde);
+    border-radius: 2px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13px; color: var(--negro);
+    background: var(--gris-fondo);
+    transition: border-color 0.2s; outline: none;
+  }
+  .form-field input:focus, .form-field select:focus { border-color: var(--verde); background: var(--blanco); }
+  .form-actions { display: flex; gap: 12px; margin-top: 20px; }
+  .btn-agregar { padding: 11px 24px; background: var(--verde); color: var(--blanco); border: none; border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 500; letter-spacing: 1px; text-transform: uppercase; cursor: pointer; transition: background 0.2s; }
+  .btn-agregar:hover { background: var(--verde-medio); }
+  .btn-limpiar { padding: 11px 20px; background: none; border: 1px solid var(--gris-borde); border-radius: 2px; font-family: 'DM Sans', sans-serif; font-size: 12px; color: var(--gris-texto); cursor: pointer; transition: all 0.2s; }
+  .btn-limpiar:hover { border-color: var(--negro); color: var(--negro); }
+
+  /* TABLA ANTECEDENTES */
+  .ant-table-wrap { background: var(--blanco); border: 1px solid var(--gris-borde); border-radius: 2px; overflow-x: auto; }
+  .ant-table-wrap table { min-width: 1200px; }
+  .vm2-cell { font-weight: 500; color: var(--verde); }
+  .btn-del { background: none; border: none; color: var(--gris-borde); cursor: pointer; font-size: 16px; transition: color 0.2s; padding: 2px 6px; }
+  .btn-del:hover { color: var(--rojo); }
+  .saving-indicator { font-size: 11px; color: var(--verde); display: none; }
+
+  /* RESPONSIVE */
+  @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+</style>
+</head>
+<body>
+
+<!-- ══════════ LOGIN ══════════ -->
+<div id="login-screen">
+  <div class="login-card">
+    <div class="login-logo">Matías Faginoli · Servicios Inmobiliarios</div>
+    <div class="login-title">Sistema de<br><span>Tasaciones ACM</span></div>
+    <div class="form-group">
+      <label>Email</label>
+      <input type="email" id="login-email" placeholder="tu@email.com">
+    </div>
+    <div class="form-group">
+      <label>Contraseña</label>
+      <input type="password" id="login-pass" placeholder="••••••••">
+    </div>
+    <button class="btn-primary" onclick="doLogin()">Ingresar</button>
+    <div class="login-error" id="login-error">Email o contraseña incorrectos.</div>
+  </div>
+</div>
+
+<!-- ══════════ APP ══════════ -->
+<div id="app">
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-name">ACM Sistema</div>
+      <div class="sidebar-logo-sub">Tasaciones · Córdoba</div>
+    </div>
+    <nav class="sidebar-nav">
+      <div class="nav-item active" onclick="showDashboard()">
+        <span class="nav-icon">⊞</span> Dashboard
+      </div>
+      <div class="nav-item" onclick="alert('Próximamente')">
+        <span class="nav-icon">📋</span> Tasaciones
+      </div>
+      <div class="nav-item" onclick="alert('Próximamente')">
+        <span class="nav-icon">👥</span> Clientes
+      </div>
+      <div class="nav-item" onclick="alert('Próximamente')">
+        <span class="nav-icon">📊</span> Reportes
+      </div>
+    </nav>
+    <div class="sidebar-user">
+      <div class="user-avatar" id="user-avatar">M</div>
+      <div class="user-info">
+        <div class="user-name" id="user-name">Matías Faginoli</div>
+        <div class="user-role">Admin</div>
+      </div>
+      <button class="btn-logout" onclick="doLogout()" title="Cerrar sesión">⏻</button>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <main class="main">
+
+    <!-- DASHBOARD -->
+    <div id="dashboard-screen">
+      <div class="page-header">
+        <div class="page-title">Bienvenido, <span id="welcome-name">Matías</span></div>
+        <div class="page-sub">Panel de gestión de tasaciones · <span id="fecha-hoy"></span></div>
+      </div>
+
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Tasaciones</div>
+          <div class="stat-value" id="stat-total">0</div>
+          <div class="stat-desc">en el sistema</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">En Proceso</div>
+          <div class="stat-value" id="stat-proceso">0</div>
+          <div class="stat-desc">activas</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Completadas</div>
+          <div class="stat-value" id="stat-completas">0</div>
+          <div class="stat-desc">este mes</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Antecedentes</div>
+          <div class="stat-value" id="stat-ant">0</div>
+          <div class="stat-desc">cargados</div>
+        </div>
+      </div>
+
+      <div class="section-header">
+        <div class="section-title">Tasaciones</div>
+        <button class="btn-new" onclick="openModalNueva()">+ Nueva Tasación</button>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Cliente</th>
+              <th>Dirección</th>
+              <th>Tipo</th>
+              <th>Fecha</th>
+              <th>Estado</th>
+              <th>Precio Sugerido</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="tasaciones-tbody">
+            <tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📁</div><div class="empty-text">No hay tasaciones aún. Creá la primera.</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- OPERATIVO 1 -->
+    <div id="op1-screen">
+      <button class="btn-back" onclick="showDashboard()">← Volver al Dashboard</button>
+      <div class="op1-header">
+        <div>
+          <div class="page-title">Operativo 1 — <span>Antecedentes</span></div>
+          <div class="page-sub" id="op1-tasacion-info">Cargando...</div>
+        </div>
+        <span class="saving-indicator" id="saving-indicator">✓ Guardado</span>
+      </div>
+
+      <!-- FORMULARIO CARGA -->
+      <div class="op1-form">
+        <div class="op1-form-title">Cargar nuevo antecedente</div>
+        <div class="form-grid-3">
+          <div class="form-field"><label>Barrio</label><input type="text" id="f-barrio" placeholder="Ej: San Fernando"></div>
+          <div class="form-field"><label>Dirección</label><input type="text" id="f-direccion" placeholder="Ej: Av. Belardinelli 1234"></div>
+          <div class="form-field"><label>Días publicado</label><input type="number" id="f-dias" placeholder="60"></div>
+        </div>
+        <div class="form-grid-4">
+          <div class="form-field"><label>Precio (USD)</label><input type="number" id="f-precio" placeholder="100000"></div>
+          <div class="form-field"><label>Sup. Total (m²)</label><input type="number" id="f-sup-total" placeholder="52"></div>
+          <div class="form-field"><label>Sup. Cubierta (m²)</label><input type="number" id="f-sup-cub" placeholder="52"></div>
+          <div class="form-field"><label>Sup. Descubierta (m²)</label><input type="number" id="f-sup-desc" placeholder="0"></div>
+        </div>
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label>Tipo sup. desc.</label>
+            <select id="f-tipo">
+              <option value="">— Sin descubierta —</option>
+              <option value="Balcón">Balcón</option>
+              <option value="Terraza">Terraza</option>
+              <option value="Patio">Patio</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0 = a estrenar"></div>
+          <div class="form-field"><label>Dormitorios</label><input type="number" id="f-dorm" placeholder="1"></div>
+          <div class="form-field"><label>Baños</label><input type="number" id="f-ban" placeholder="1"></div>
+        </div>
+        <div class="form-grid-4">
+          <div class="form-field">
+            <label>Cochera</label>
+            <select id="f-coch">
+              <option value="No">No</option>
+              <option value="Sí">Sí</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Estado</label>
+            <select id="f-estado">
+              <option value="">—</option>
+              <option value="A estrenar">A estrenar</option>
+              <option value="Excelente">Excelente</option>
+              <option value="Muy bueno">Muy bueno</option>
+              <option value="Bueno">Bueno</option>
+              <option value="Regular">Regular</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Ub. Planta</label>
+            <select id="f-planta">
+              <option value="">—</option>
+              <option value="Frente">Frente</option>
+              <option value="Contrafrente">Contrafrente</option>
+              <option value="Lateral">Lateral</option>
+              <option value="Interior">Interior</option>
+            </select>
+          </div>
+          <div class="form-field"><label>Piso</label><input type="number" id="f-piso" placeholder="1"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-agregar" onclick="agregarAntecedente()">+ Agregar antecedente</button>
+          <button class="btn-limpiar" onclick="limpiarForm()">Limpiar</button>
+        </div>
+      </div>
+
+      <!-- TABLA ANTECEDENTES -->
+      <div class="section-header">
+        <div class="section-title">Antecedentes cargados (<span id="ant-count">0</span>)</div>
+      </div>
+      <div class="ant-table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Barrio</th>
+              <th>Dirección</th>
+              <th>Días</th>
+              <th>Precio</th>
+              <th>Sup. Total</th>
+              <th>Sup. Cub.</th>
+              <th>Sup. Desc.</th>
+              <th>Tipo</th>
+              <th>Ant.</th>
+              <th>Dorm.</th>
+              <th>Baños</th>
+              <th>Coch.</th>
+              <th>Estado</th>
+              <th>Planta</th>
+              <th>Piso</th>
+              <th>V/m²</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody id="ant-tbody">
+            <tr id="ant-empty"><td colspan="18"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Agregá el primer antecedente usando el formulario.</div></div></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- MODAL NUEVA TASACIÓN -->
+<div class="modal-overlay" id="modal-nueva">
+  <div class="modal">
+    <div class="modal-title">Nueva Tasación</div>
+    <div class="modal-sub">Completá los datos para crear una nueva tasación</div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Tipo de propiedad</div>
+      <div class="tipo-grid">
+        <div class="tipo-card selected" onclick="selectTipo('dpto')" id="tipo-dpto">
+          <div class="tipo-icon">🏢</div>
+          <div class="tipo-name">Departamento</div>
+          <div class="tipo-desc">Comparable directo</div>
+        </div>
+        <div class="tipo-card" onclick="selectTipo('casa_sin')" id="tipo-casa_sin">
+          <div class="tipo-icon">🏠</div>
+          <div class="tipo-name">Casa s/terreno</div>
+          <div class="tipo-desc">Sin terrenos comparables</div>
+        </div>
+        <div class="tipo-card" onclick="selectTipo('casa_con')" id="tipo-casa_con">
+          <div class="tipo-icon">🏡</div>
+          <div class="tipo-name">Casa c/terreno</div>
+          <div class="tipo-desc">Con terrenos disponibles</div>
+        </div>
+        <div class="tipo-card" onclick="selectTipo('lote')" id="tipo-lote">
+          <div class="tipo-icon">🌿</div>
+          <div class="tipo-name">Lote</div>
+          <div class="tipo-desc">Solo suelo</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Datos del cliente</div>
+      <div class="form-row">
+        <div class="form-field"><label>Nombre del cliente</label><input type="text" id="m-cliente" placeholder="Leonardo Nigro"></div>
+        <div class="form-field"><label>Fecha</label><input type="date" id="m-fecha"></div>
+      </div>
+    </div>
+
+    <div class="modal-section">
+      <div class="modal-section-title">Datos de la propiedad</div>
+      <div class="form-field" style="margin-bottom:14px"><label>Dirección</label><input type="text" id="m-direccion" placeholder="Calle Pública A 6353"></div>
+      <div class="form-row">
+        <div class="form-field"><label>Barrio</label><input type="text" id="m-barrio" placeholder="Los Boulevares"></div>
+        <div class="form-field"><label>Ciudad</label><input type="text" id="m-ciudad" placeholder="Córdoba Capital"></div>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn-cancel" onclick="closeModalNueva()">Cancelar</button>
+      <button class="btn-crear" onclick="crearTasacion()">Crear y cargar antecedentes →</button>
+    </div>
+  </div>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
+  import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
+    from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, arrayUnion, query, where, orderBy, serverTimestamp }
+    from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBCzaGrECDa1ngsU8pnMINjpD_MtqrFm8k",
+    authDomain: "acm-tasaciones.firebaseapp.com",
+    projectId: "acm-tasaciones",
+    storageBucket: "acm-tasaciones.firebasestorage.app",
+    messagingSenderId: "86602341645",
+    appId: "1:86602341645:web:066d56ee029588ac5c2444"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  // Estado global
+  window._db = db;
+  window._auth = auth;
+  window._currentTasacionId = null;
+  window._antecedentes = [];
+  window._tipoSeleccionado = 'dpto';
+
+  // Auth state
+  onAuthStateChanged(auth, (user) => {
+    if (user) {
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('app').style.display = 'block';
+      const nombre = user.email.split('@')[0];
+      document.getElementById('user-name').textContent = user.email;
+      document.getElementById('welcome-name').textContent = nombre;
+      document.getElementById('user-avatar').textContent = nombre[0].toUpperCase();
+      cargarTasaciones();
+    } else {
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('app').style.display = 'none';
+    }
+  });
+
+  // LOGIN
+  window.doLogin = async () => {
+    const email = document.getElementById('login-email').value;
+    const pass = document.getElementById('login-pass').value;
+    const err = document.getElementById('login-error');
+    err.style.display = 'none';
+    try {
+      await signInWithEmailAndPassword(auth, email, pass);
+    } catch(e) {
+      err.style.display = 'block';
+    }
+  };
+
+  window.doLogout = async () => {
+    await signOut(auth);
+  };
+
+  // Fecha hoy
+  const hoy = new Date();
+  document.getElementById('fecha-hoy').textContent = hoy.toLocaleDateString('es-AR', { weekday:'long', year:'numeric', month:'long', day:'numeric' });
+  const fechaInput = document.getElementById('m-fecha');
+  if (fechaInput) fechaInput.value = hoy.toISOString().split('T')[0];
+
+  // CARGAR TASACIONES
+  window.cargarTasaciones = async () => {
+    try {
+      const snap = await getDocs(collection(db, 'tasaciones'));
+      const tasaciones = [];
+      snap.forEach(d => tasaciones.push({ id: d.id, ...d.data() }));
+      tasaciones.sort((a,b) => (b.creadoEn?.seconds||0) - (a.creadoEn?.seconds||0));
+
+      const tbody = document.getElementById('tasaciones-tbody');
+      const total = tasaciones.length;
+      const enProceso = tasaciones.filter(t => t.estado === 'En proceso').length;
+      const completas = tasaciones.filter(t => t.estado === 'Completada').length;
+
+      document.getElementById('stat-total').textContent = total;
+      document.getElementById('stat-proceso').textContent = enProceso;
+      document.getElementById('stat-completas').textContent = completas;
+
+      let totalAnt = 0;
+      tasaciones.forEach(t => { totalAnt += (t.antecedentes||[]).length; });
+      document.getElementById('stat-ant').textContent = totalAnt;
+
+      if (total === 0) {
+        tbody.innerHTML = '<tr><td colspan="7"><div class="empty-state"><div class="empty-icon">📁</div><div class="empty-text">No hay tasaciones aún. Creá la primera.</div></div></td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = tasaciones.map(t => {
+        const tipo = { dpto:'Departamento', casa_sin:'Casa s/terreno', casa_con:'Casa c/terreno', lote:'Lote' }[t.tipo] || t.tipo;
+        const badgeTipo = { dpto:'badge-dpto', casa_sin:'badge-casa', casa_con:'badge-casa', lote:'badge-lote' }[t.tipo] || '';
+        const badgeEst = t.estado === 'Completada' ? 'badge-completo' : 'badge-proceso';
+        const fecha = t.fecha || '—';
+        const precio = t.precioSugerido ? `USD ${Number(t.precioSugerido).toLocaleString('es-AR')}` : '—';
+        return `<tr>
+          <td><strong>${t.cliente}</strong></td>
+          <td>${t.direccion}, ${t.barrio}</td>
+          <td><span class="badge ${badgeTipo}">${tipo}</span></td>
+          <td>${fecha}</td>
+          <td><span class="badge ${badgeEst}">${t.estado}</span></td>
+          <td>${precio}</td>
+          <td><button class="btn-ver" onclick="abrirTasacion('${t.id}')">Abrir →</button></td>
+        </tr>`;
+      }).join('');
+    } catch(e) {
+      console.error(e);
+    }
+  };
+
+  // MODAL NUEVA
+  window.openModalNueva = () => {
+    document.getElementById('modal-nueva').classList.add('show');
+    document.getElementById('m-fecha').value = new Date().toISOString().split('T')[0];
+  };
+  window.closeModalNueva = () => {
+    document.getElementById('modal-nueva').classList.remove('show');
+  };
+  window.selectTipo = (tipo) => {
+    window._tipoSeleccionado = tipo;
+    document.querySelectorAll('.tipo-card').forEach(c => c.classList.remove('selected'));
+    document.getElementById('tipo-' + tipo).classList.add('selected');
+  };
+
+  // CREAR TASACION
+  window.crearTasacion = async () => {
+    const cliente = document.getElementById('m-cliente').value.trim();
+    const fecha = document.getElementById('m-fecha').value;
+    const direccion = document.getElementById('m-direccion').value.trim();
+    const barrio = document.getElementById('m-barrio').value.trim();
+    const ciudad = document.getElementById('m-ciudad').value.trim();
+    if (!cliente || !direccion || !barrio) { alert('Completá cliente, dirección y barrio.'); return; }
+
+    try {
+      const docRef = await addDoc(collection(db, 'tasaciones'), {
+        cliente, fecha, direccion, barrio, ciudad,
+        tipo: window._tipoSeleccionado,
+        estado: 'En proceso',
+        antecedentes: [],
+        precioSugerido: null,
+        creadoEn: serverTimestamp()
+      });
+      closeModalNueva();
+      abrirTasacion(docRef.id);
+    } catch(e) {
+      console.error(e);
+      alert('Error al crear la tasación.');
+    }
+  };
+
+  // ABRIR TASACION → OPERATIVO 1
+  window.abrirTasacion = async (id) => {
+    window._currentTasacionId = id;
+    try {
+      const snap = await getDocs(collection(db, 'tasaciones'));
+      let tasacion = null;
+      snap.forEach(d => { if(d.id === id) tasacion = { id:d.id, ...d.data() }; });
+      if (!tasacion) return;
+
+      window._antecedentes = tasacion.antecedentes || [];
+      document.getElementById('op1-tasacion-info').textContent =
+        `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tasacion.tipo === 'dpto' ? 'Departamento' : tasacion.tipo}`;
+
+      renderAntecedentes();
+      showOp1();
+      cargarTasaciones();
+    } catch(e) { console.error(e); }
+  };
+
+  // AGREGAR ANTECEDENTE
+  window.agregarAntecedente = async () => {
+    const precio = parseFloat(document.getElementById('f-precio').value);
+    const supCub = parseFloat(document.getElementById('f-sup-cub').value);
+    if (!precio || !supCub) { alert('Precio y superficie cubierta son obligatorios.'); return; }
+
+    const ant = {
+      id: Date.now(),
+      barrio: document.getElementById('f-barrio').value.trim(),
+      direccion: document.getElementById('f-direccion').value.trim(),
+      dias: parseInt(document.getElementById('f-dias').value) || null,
+      precio,
+      supTotal: parseFloat(document.getElementById('f-sup-total').value) || null,
+      supCub,
+      supDesc: parseFloat(document.getElementById('f-sup-desc').value) || null,
+      tipo: document.getElementById('f-tipo').value || null,
+      ant: parseInt(document.getElementById('f-ant').value) ?? null,
+      dorm: parseInt(document.getElementById('f-dorm').value) || null,
+      ban: parseInt(document.getElementById('f-ban').value) || null,
+      coch: document.getElementById('f-coch').value,
+      estado: document.getElementById('f-estado').value || null,
+      planta: document.getElementById('f-planta').value || null,
+      piso: parseInt(document.getElementById('f-piso').value) || null,
+      vm2: Math.round(precio / supCub)
+    };
+
+    window._antecedentes.push(ant);
+    await guardarAntecedentes();
+    renderAntecedentes();
+    limpiarForm();
+
+    const ind = document.getElementById('saving-indicator');
+    ind.style.display = 'inline';
+    setTimeout(() => ind.style.display = 'none', 2000);
+  };
+
+  // GUARDAR EN FIREBASE
+  window.guardarAntecedentes = async () => {
+    if (!window._currentTasacionId) return;
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+      antecedentes: window._antecedentes
+    });
+    document.getElementById('stat-ant').textContent =
+      parseInt(document.getElementById('stat-ant').textContent || '0') + 1;
+  };
+
+  // ELIMINAR ANTECEDENTE
+  window.eliminarAnt = async (id) => {
+    if (!confirm('¿Eliminás este antecedente?')) return;
+    window._antecedentes = window._antecedentes.filter(a => a.id !== id);
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+      antecedentes: window._antecedentes
+    });
+    renderAntecedentes();
+  };
+
+  // RENDER TABLA
+  window.renderAntecedentes = () => {
+    const tbody = document.getElementById('ant-tbody');
+    const count = window._antecedentes.length;
+    document.getElementById('ant-count').textContent = count;
+
+    if (count === 0) {
+      tbody.innerHTML = '<tr id="ant-empty"><td colspan="18"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Agregá el primer antecedente usando el formulario.</div></div></td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = window._antecedentes.map((a, i) => `
+      <tr>
+        <td>${i+1}</td>
+        <td>${a.barrio||'—'}</td>
+        <td>${a.direccion||'—'}</td>
+        <td>${a.dias||'—'}</td>
+        <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
+        <td>${a.supTotal||'—'} m²</td>
+        <td>${a.supCub} m²</td>
+        <td>${a.supDesc||'—'}</td>
+        <td>${a.tipo||'—'}</td>
+        <td>${a.ant != null ? (a.ant === 0 ? 'A estrenar' : a.ant+' años') : '—'}</td>
+        <td>${a.dorm||'—'}</td>
+        <td>${a.ban||'—'}</td>
+        <td>${a.coch||'—'}</td>
+        <td>${a.estado||'—'}</td>
+        <td>${a.planta||'—'}</td>
+        <td>${a.piso||'—'}</td>
+        <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
+        <td><button class="btn-del" onclick="eliminarAnt(${a.id})">✕</button></td>
+      </tr>
+    `).join('');
+  };
+
+  // LIMPIAR FORM
+  window.limpiarForm = () => {
+    ['f-barrio','f-direccion','f-dias','f-precio','f-sup-total','f-sup-cub','f-sup-desc','f-ant','f-dorm','f-ban','f-piso']
+      .forEach(id => document.getElementById(id).value = '');
+    document.getElementById('f-tipo').value = '';
+    document.getElementById('f-coch').value = 'No';
+    document.getElementById('f-estado').value = '';
+    document.getElementById('f-planta').value = '';
+  };
+
+  // NAVEGACIÓN
+  window.showDashboard = () => {
+    document.getElementById('dashboard-screen').style.display = 'block';
+    document.getElementById('op1-screen').style.display = 'none';
+    cargarTasaciones();
+  };
+  window.showOp1 = () => {
+    document.getElementById('dashboard-screen').style.display = 'none';
+    document.getElementById('op1-screen').style.display = 'block';
+  };
+
+  // Enter en login
+  document.getElementById('login-pass').addEventListener('keypress', e => {
+    if (e.key === 'Enter') doLogin();
+  });
+</script>
+</body>
+</html>
