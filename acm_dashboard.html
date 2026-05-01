@@ -298,8 +298,17 @@
   .btn-del:hover { color: var(--rojo); }
   .saving-indicator { font-size: 11px; color: var(--verde); display: none; }
 
-  /* RESPONSIVE */
-  @media (max-width: 1200px) { .stats-grid { grid-template-columns: repeat(2,1fr); } }
+  .pond-factor { font-size:11px; font-weight:500; color:var(--negro); padding:8px 12px; white-space:nowrap; background:var(--gris-fondo); border-bottom:1px solid var(--gris-claro); }
+  .pond-input { width:70px; padding:6px 8px; border:1px solid var(--gris-borde); border-radius:2px; font-size:12px; text-align:center; font-family:'DM Sans',sans-serif; }
+  .pond-input:focus { outline:none; border-color:var(--verde); }
+  .pond-result { font-size:12px; font-weight:600; color:var(--verde); text-align:center; padding:8px 12px; }
+  .pond-header-cell { background:var(--verde); color:white; padding:8px 12px; font-size:10px; letter-spacing:1px; text-align:center; white-space:nowrap; }
+  .pond-fh { font-size:12px; font-weight:700; color:white; text-align:center; padding:8px 12px; background:var(--verde-medio); }
+  .pond-vu { font-size:12px; font-weight:700; color:white; text-align:center; padding:8px 12px; background:var(--verde); }
+  .btn-op2 { display:flex; align-items:center; gap:8px; padding:10px 20px; background:var(--verde-medio); color:var(--blanco); border:none; border-radius:2px; font-family:'DM Sans',sans-serif; font-size:12px; font-weight:500; letter-spacing:1px; text-transform:uppercase; cursor:pointer; transition:background 0.2s; margin-top:16px; }
+  .btn-op2:hover { background:var(--verde); }
+  .checkbox-comp { width:18px; height:18px; cursor:pointer; accent-color:var(--verde); }
+  tr.comp-selected { background:var(--verde-claro) !important; }
 </style>
 </head>
 <body>
@@ -503,6 +512,7 @@
       <!-- TABLA ANTECEDENTES -->
       <div class="section-header">
         <div class="section-title">Antecedentes cargados (<span id="ant-count">0</span>)</div>
+        <button class="btn-op2" onclick="showOp2()">Ir a Operativo 2 →</button>
       </div>
       <div class="ant-table-wrap">
         <table>
@@ -535,6 +545,105 @@
             <tr id="ant-empty"><td colspan="21"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">Agregá el primer antecedente usando el formulario.</div></div></td></tr>
           </tbody>
         </table>
+      </div>
+    </div>
+
+    <!-- OPERATIVO 2 -->
+    <div id="op2-screen" style="display:none">
+      <button class="btn-back" onclick="showOp1()">← Volver al Operativo 1</button>
+      <div class="op1-header">
+        <div>
+          <div class="page-title">Operativo 2 — <span>Ponderación</span></div>
+          <div class="page-sub" id="op2-tasacion-info">Cargando...</div>
+        </div>
+        <span class="saving-indicator" id="saving-indicator-2">✓ Guardado</span>
+      </div>
+
+      <!-- DATOS PROPIEDAD A TASAR -->
+      <div class="op1-form" style="margin-bottom:24px">
+        <div class="op1-form-title">Propiedad a tasar</div>
+        <div class="form-grid-3">
+          <div class="form-field"><label>Barrio</label><input type="text" id="p-barrio" placeholder="Ej: Alberdi"></div>
+          <div class="form-field"><label>Dirección</label><input type="text" id="p-direccion" placeholder="Ej: Enfermera Clermont 100"></div>
+          <div class="form-field"><label>Precio sugerido (USD)</label><input type="number" id="p-precio" placeholder="45000"></div>
+        </div>
+        <div class="form-grid-3">
+          <div class="form-field"><label>Sup. propia (m²)</label><input type="number" id="p-sup-propia" placeholder="40"></div>
+          <div class="form-field"><label>Sup. balcón (m²)</label><input type="number" id="p-sup-balcon" placeholder="0"></div>
+          <div class="form-field"><label>Sup. homogeneizada</label><input type="number" id="p-sup-hom" placeholder="0" readonly style="background:#e8f4ee;font-weight:600;color:#2D5A45"></div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-agregar" onclick="guardarPropiedad()">Guardar propiedad</button>
+        </div>
+      </div>
+
+      <!-- SELECCIÓN DE COMPARABLES -->
+      <div class="section-header" style="margin-bottom:12px">
+        <div class="section-title">Seleccioná los comparables directos</div>
+        <span style="font-size:12px;color:var(--gris-texto)"><span id="comp-count">0</span> seleccionados</span>
+      </div>
+      <div class="table-wrap" style="margin-bottom:24px">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:40px">✓</th>
+              <th>#</th>
+              <th>Dirección</th>
+              <th>Precio</th>
+              <th>Sup. Cub.</th>
+              <th>Balcón</th>
+              <th>Ant.</th>
+              <th>Dorm.</th>
+              <th>Disp.</th>
+              <th>Amenities</th>
+              <th>Días</th>
+              <th>V/m²</th>
+            </tr>
+          </thead>
+          <tbody id="comp-tbody"></tbody>
+        </table>
+      </div>
+
+      <!-- TABLA DE PONDERACIÓN -->
+      <div id="pond-section" style="display:none">
+        <div class="section-header" style="margin-bottom:12px">
+          <div class="section-title">Tabla de Ponderación</div>
+          <button class="btn-agregar" onclick="calcularPonderacion()" style="padding:10px 20px;font-size:11px">Calcular →</button>
+        </div>
+        <div style="overflow-x:auto;background:var(--blanco);border:1px solid var(--gris-borde);border-radius:2px;margin-bottom:24px">
+          <table id="pond-table" style="min-width:1000px">
+            <thead>
+              <tr>
+                <th style="background:var(--verde);color:white;padding:10px 12px;text-align:left;font-size:10px;letter-spacing:1px;white-space:nowrap">Factor</th>
+                <!-- columnas dinamicas -->
+              </tr>
+            </thead>
+            <tbody id="pond-tbody"></tbody>
+            <tfoot id="pond-tfoot"></tfoot>
+          </table>
+        </div>
+
+        <!-- RESULTADO -->
+        <div id="resultado-section" style="display:none">
+          <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:24px">
+            <div class="stat-card">
+              <div class="stat-label">V/m² promedio comparables</div>
+              <div class="stat-value" id="res-vm2-comp">—</div>
+            </div>
+            <div class="stat-card">
+              <div class="stat-label">V/m² homogeneizado</div>
+              <div class="stat-value" id="res-vm2-hom">—</div>
+            </div>
+            <div class="stat-card" style="border:2px solid var(--verde)">
+              <div class="stat-label">Valor sugerido propiedad</div>
+              <div class="stat-value" id="res-valor-final">—</div>
+              <div class="stat-desc" id="res-desc">—</div>
+            </div>
+          </div>
+          <div class="form-actions">
+            <button class="btn-agregar" onclick="guardarResultado()">Guardar resultado en tasación</button>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -760,6 +869,7 @@
       snap.forEach(d => { if(d.id === id) tasacion = { id:d.id, ...d.data() }; });
       if (!tasacion) return;
 
+      window._tasacionActual = tasacion;
       window._antecedentes = tasacion.antecedentes || [];
       document.getElementById('op1-tasacion-info').textContent =
         `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tasacion.tipo === 'dpto' ? 'Departamento' : tasacion.tipo}`;
@@ -962,15 +1072,227 @@
     btn.style.background = 'var(--verde)';
   };
 
+  // NAVEGACIÓN OP2
+  window.showOp2 = () => {
+    if (!window._currentTasacionId) { alert('Abrí una tasación primero.'); return; }
+    document.getElementById('dashboard-screen').style.display = 'none';
+    document.getElementById('op1-screen').style.display = 'none';
+    document.getElementById('op2-screen').style.display = 'block';
+    document.getElementById('op2-tasacion-info').textContent =
+      document.getElementById('op1-tasacion-info').textContent;
+    renderComparables();
+    // Cargar datos propiedad si ya estaban guardados
+    const t = window._tasacionActual;
+    if (t?.propiedad) {
+      document.getElementById('p-barrio').value = t.propiedad.barrio || '';
+      document.getElementById('p-direccion').value = t.propiedad.direccion || '';
+      document.getElementById('p-precio').value = t.propiedad.precio || '';
+      document.getElementById('p-sup-propia').value = t.propiedad.supPropia || '';
+      document.getElementById('p-sup-balcon').value = t.propiedad.supBalcon || '';
+      calcularSupHom();
+    }
+    if (t?.comparablesSeleccionados?.length) {
+      window._seleccionados = t.comparablesSeleccionados;
+      renderComparables();
+    }
+  };
+
+  window.showOp1 = () => {
+    document.getElementById('op2-screen').style.display = 'none';
+    document.getElementById('op1-screen').style.display = 'block';
+  };
+
+  // CALCULAR SUP HOMOGENEIZADA (cubierta 100% + balcón 30%)
+  window.calcularSupHom = () => {
+    const propia = parseFloat(document.getElementById('p-sup-propia').value) || 0;
+    const balcon = parseFloat(document.getElementById('p-sup-balcon').value) || 0;
+    const hom = propia * 1 + balcon * 0.3;
+    document.getElementById('p-sup-hom').value = hom.toFixed(2);
+  };
+  document.getElementById('p-sup-propia').addEventListener('input', calcularSupHom);
+  document.getElementById('p-sup-balcon').addEventListener('input', calcularSupHom);
+
+  // GUARDAR PROPIEDAD
+  window.guardarPropiedad = async () => {
+    const propiedad = {
+      barrio: document.getElementById('p-barrio').value.trim(),
+      direccion: document.getElementById('p-direccion').value.trim(),
+      precio: parseFloat(document.getElementById('p-precio').value) || null,
+      supPropia: parseFloat(document.getElementById('p-sup-propia').value) || null,
+      supBalcon: parseFloat(document.getElementById('p-sup-balcon').value) || null,
+      supHom: parseFloat(document.getElementById('p-sup-hom').value) || null,
+    };
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), { propiedad });
+    const ind = document.getElementById('saving-indicator-2');
+    ind.style.display = 'inline';
+    setTimeout(() => ind.style.display = 'none', 2000);
+  };
+
+  // RENDER COMPARABLES CON CHECKBOX
+  window._seleccionados = [];
+  window.renderComparables = () => {
+    const tbody = document.getElementById('comp-tbody');
+    const ants = window._antecedentes;
+    if (!ants.length) {
+      tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>';
+      return;
+    }
+    tbody.innerHTML = ants.map((a, i) => {
+      const sel = window._seleccionados.includes(a.id);
+      return `<tr class="${sel ? 'comp-selected' : ''}" id="comp-row-${a.id}">
+        <td style="text-align:center">
+          <input type="checkbox" class="checkbox-comp" ${sel ? 'checked' : ''}
+            onchange="toggleComp(${a.id}, this.checked)">
+        </td>
+        <td>${i+1}</td>
+        <td>${a.direccion||'—'}</td>
+        <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
+        <td>${a.supCub} m²</td>
+        <td>${a.supDesc ? a.supDesc+' m²' : '—'}</td>
+        <td>${a.ant != null ? (a.ant === 0 ? 'Estrenar' : a.ant+' años') : '—'}</td>
+        <td>${a.dorm||'—'}</td>
+        <td>${a.planta||'—'}</td>
+        <td>${a.amenities||'—'}</td>
+        <td>${a.dias||'—'}</td>
+        <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
+      </tr>`;
+    }).join('');
+    actualizarContadorComp();
+  };
+
+  window.toggleComp = (id, checked) => {
+    if (checked) {
+      if (!window._seleccionados.includes(id)) window._seleccionados.push(id);
+    } else {
+      window._seleccionados = window._seleccionados.filter(s => s !== id);
+    }
+    const row = document.getElementById('comp-row-' + id);
+    if (row) row.className = checked ? 'comp-selected' : '';
+    actualizarContadorComp();
+    if (window._seleccionados.length > 0) {
+      construirTablaPonderacion();
+      document.getElementById('pond-section').style.display = 'block';
+    } else {
+      document.getElementById('pond-section').style.display = 'none';
+    }
+  };
+
+  window.actualizarContadorComp = () => {
+    document.getElementById('comp-count').textContent = window._seleccionados.length;
+  };
+
+  // FACTORES DE PONDERACIÓN
+  const FACTORES = [
+    'Ubicación', 'Antigüedad', 'Calidad constructiva', 'Mantenimiento',
+    'Comodidades', 'Estacionamiento', 'Cochera', 'Revalorización del mercado',
+    'Deseabilidad', 'Tiempo en mercado'
+  ];
+
+  window.construirTablaPonderacion = () => {
+    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
+    const table = document.getElementById('pond-table');
+
+    // Header
+    const thead = table.querySelector('thead tr');
+    thead.innerHTML = `<th style="background:var(--verde);color:white;padding:10px 12px;text-align:left;font-size:10px;letter-spacing:1px;min-width:160px">Factor</th>`;
+    comps.forEach((c, i) => {
+      thead.innerHTML += `<th class="pond-header-cell" style="min-width:90px">${c.direccion.split(' ').slice(0,2).join(' ')}<br><small style="font-weight:300;opacity:0.8">USD ${Number(c.vm2).toLocaleString('es-AR')}/m²</small></th>`;
+    });
+
+    // Body — inputs por factor
+    const tbody = document.getElementById('pond-tbody');
+    tbody.innerHTML = FACTORES.map((f, fi) => {
+      let cells = comps.map((c, ci) =>
+        `<td style="text-align:center;padding:4px 8px;border-bottom:1px solid var(--gris-claro)">
+          <input type="number" class="pond-input" id="pond-${fi}-${ci}"
+            value="1.00" step="0.05" min="0.5" max="1.5"
+            onchange="calcularPonderacion()">
+        </td>`
+      ).join('');
+      return `<tr>
+        <td class="pond-factor">${f}</td>
+        ${cells}
+      </tr>`;
+    }).join('');
+
+    // Footer — FH y Valor resultante
+    const tfoot = document.getElementById('pond-tfoot');
+    tfoot.innerHTML = `
+      <tr style="background:var(--verde-claro)">
+        <td class="pond-factor" style="font-weight:700;color:var(--verde)">FH (Producto factores)</td>
+        ${comps.map((c,ci) => `<td class="pond-result" id="fh-${ci}">—</td>`).join('')}
+      </tr>
+      <tr style="background:var(--verde-claro)">
+        <td class="pond-factor" style="font-weight:700;color:var(--verde)">Valor Unitario Resultante (USD/m²)</td>
+        ${comps.map((c,ci) => `<td class="pond-result" id="vu-${ci}">—</td>`).join('')}
+      </tr>
+    `;
+    calcularPonderacion();
+  };
+
+  // CALCULAR PONDERACIÓN
+  window.calcularPonderacion = () => {
+    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
+    let vuTotal = 0;
+
+    comps.forEach((c, ci) => {
+      let fh = 1;
+      FACTORES.forEach((f, fi) => {
+        const input = document.getElementById(`pond-${fi}-${ci}`);
+        if (input) fh *= parseFloat(input.value) || 1;
+      });
+      const vu = c.vm2 * fh;
+      vuTotal += vu;
+      const fhEl = document.getElementById(`fh-${ci}`);
+      const vuEl = document.getElementById(`vu-${ci}`);
+      if (fhEl) fhEl.textContent = fh.toFixed(4);
+      if (vuEl) vuEl.textContent = `USD ${Math.round(vu).toLocaleString('es-AR')}`;
+    });
+
+    const vm2Prom = comps.length > 0 ? vuTotal / comps.length : 0;
+    const supHom = parseFloat(document.getElementById('p-sup-hom').value) || 0;
+    const valorFinal = Math.round(vm2Prom * supHom);
+
+    document.getElementById('res-vm2-comp').textContent =
+      `USD ${Math.round(comps.reduce((s,c) => s+c.vm2, 0)/comps.length).toLocaleString('es-AR')}/m²`;
+    document.getElementById('res-vm2-hom').textContent =
+      `USD ${Math.round(vm2Prom).toLocaleString('es-AR')}/m²`;
+    document.getElementById('res-valor-final').textContent =
+      valorFinal > 0 ? `USD ${valorFinal.toLocaleString('es-AR')}` : '—';
+    document.getElementById('res-desc').textContent =
+      supHom > 0 ? `${supHom.toFixed(1)} m² × USD ${Math.round(vm2Prom).toLocaleString('es-AR')}/m²` : 'Completá la sup. homogeneizada';
+
+    document.getElementById('resultado-section').style.display = 'block';
+  };
+
+  // GUARDAR RESULTADO
+  window.guardarResultado = async () => {
+    const vm2Hom = document.getElementById('res-vm2-hom').textContent;
+    const valorFinal = document.getElementById('res-valor-final').textContent;
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+      precioSugerido: document.getElementById('p-precio').value || null,
+      vm2Homogeneizado: vm2Hom,
+      valorTasacion: valorFinal,
+      comparablesSeleccionados: window._seleccionados,
+      estado: 'En proceso'
+    });
+    const ind = document.getElementById('saving-indicator-2');
+    ind.style.display = 'inline';
+    setTimeout(() => ind.style.display = 'none', 2000);
+    alert('✓ Resultado guardado en la tasación.');
+  };
+
   // NAVEGACIÓN
   window.showDashboard = () => {
     document.getElementById('dashboard-screen').style.display = 'block';
     document.getElementById('op1-screen').style.display = 'none';
+    document.getElementById('op2-screen').style.display = 'none';
     cargarTasaciones();
   };
   window.showOp1 = () => {
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('op1-screen').style.display = 'block';
+    document.getElementById('op2-screen').style.display = 'none';
   };
 
   // Enter en login
