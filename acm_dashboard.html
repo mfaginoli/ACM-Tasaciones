@@ -596,7 +596,8 @@
               <th>Dorm.</th>
               <th>Disp.</th>
               <th>Amenities</th>
-              <th>Días</th>
+              <th>Estado</th>
+              <th>Días pub.</th>
               <th>V/m²</th>
             </tr>
           </thead>
@@ -1134,11 +1135,17 @@
     const tbody = document.getElementById('comp-tbody');
     const ants = window._antecedentes;
     if (!ants.length) {
-      tbody.innerHTML = '<tr><td colspan="12"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>';
       return;
     }
     tbody.innerHTML = ants.map((a, i) => {
       const sel = window._seleccionados.includes(a.id);
+      // Color días publicado
+      let diasColor = 'var(--negro)';
+      if (a.dias >= 300) diasColor = 'var(--rojo)';
+      else if (a.dias >= 150) diasColor = '#E8A020';
+      else if (a.dias > 0 && a.dias <= 30) diasColor = 'var(--verde)';
+
       return `<tr class="${sel ? 'comp-selected' : ''}" id="comp-row-${a.id}">
         <td style="text-align:center">
           <input type="checkbox" class="checkbox-comp" ${sel ? 'checked' : ''}
@@ -1153,7 +1160,8 @@
         <td>${a.dorm||'—'}</td>
         <td>${a.planta||'—'}</td>
         <td>${a.amenities||'—'}</td>
-        <td>${a.dias||'—'}</td>
+        <td>${a.estado||'—'}</td>
+        <td style="color:${diasColor};font-weight:600">${a.dias||'—'}</td>
         <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
       </tr>`;
     }).join('');
