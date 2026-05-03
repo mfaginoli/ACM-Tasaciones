@@ -691,11 +691,18 @@
                 <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">V/m² (USD)</th>
                 <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Cant. unidades</th>
                 <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Días pub. promedio</th>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Visualizaciones promedio</th>
                 <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Zona</th>
               </tr>
             </thead>
             <tbody id="lp-tbody"></tbody>
           </table>
+        </div>
+
+        <!-- GRÁFICO DE RANGOS -->
+        <div style="margin-top:24px">
+          <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:12px">Distribución del muestreo</div>
+          <canvas id="lp-chart" height="80"></canvas>
         </div>
       </div>
 
@@ -1483,17 +1490,60 @@
         diasProm: diasValidos.length > 0 ? Math.round(diasValidos.reduce((s,d)=>s+d,0)/diasValidos.length) : null
       });
     }
-    // Render tabla muestreo — menor a mayor, sin zonas
+    // Calcular viz promedio por rango y ordenar menor a mayor
+    const rangosOrdenados = [...window._rangosBase].sort((a,b)=>a.desde-b.desde);
+    rangosOrdenados.forEach(r => {
+      const enRango = ants.filter(a => parseFloat(a.vm2) >= r.desde && parseFloat(a.vm2) < r.hasta);
+      const vizValidos = enRango.map(a => parseInt(a.viz) || 0).filter(v => v > 0);
+      r.vizProm = vizValidos.length > 0 ? Math.round(vizValidos.reduce((s,v)=>s+v,0)/vizValidos.length) : null;
+    });
+
+    // Render tabla muestreo — menor a mayor
+    // La zona se asigna después en aplicarZonas, por ahora placeholder
     const tbody = document.getElementById('lp-tbody');
-    tbody.innerHTML = [...window._rangosBase].sort((a,b)=>a.desde-b.desde).map(r => {
-      const diasStr = r.diasProm !== null ? `${r.diasProm} días` : '—';
-      return `<tr>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600;font-size:14px">USD ${r.desde.toLocaleString('es-AR')}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${r.cant}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px;color:var(--gris-texto)">${diasStr}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:11px;color:var(--gris-texto)">—</td>
-      </tr>`;
-    }).join('');
+    window._rangosOrdenados = rangosOrdenados;
+    const renderTabla = (zonaPorRango) => {
+      tbody.innerHTML = rangosOrdenados.map(r => {
+        const diasStr = r.diasProm !== null ? `${r.diasProm} días` : '—';
+        const vizStr  = r.vizProm  !== null ? r.vizProm.toLocaleString('es-AR')  : '—';
+        const zona = zonaPorRango?.[r.desde] || { label: '—', color: 'var(--gris-texto)', bg: 'white' };
+        return `<tr style="background:${zona.bg}">
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600;font-size:14px">USD ${r.desde.toLocaleString('es-AR')}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${r.cant}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px;color:var(--gris-texto)">${diasStr}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px;color:var(--gris-texto)">${vizStr}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:11px;font-weight:600;color:${zona.color}">${zona.label}</td>
+        </tr>`;
+      }).join('');
+    };
+    window._renderTabla = renderTabla;
+    renderTabla(null);
+
+    // Gráfico de barras — cant. por rango
+    const maxCant = Math.max(...rangosOrdenados.map(r => r.cant), 1);
+    const canvas = document.getElementById('lp-chart');
+    const ctx = canvas.getContext('2d');
+    const W = canvas.offsetWidth || 600;
+    const H = 80;
+    canvas.width = W;
+    canvas.height = H;
+    ctx.clearRect(0,0,W,H);
+    const barW = Math.floor(W / rangosOrdenados.length) - 4;
+    rangosOrdenados.forEach((r, i) => {
+      const barH = r.cant > 0 ? Math.round((r.cant / maxCant) * (H - 24)) : 2;
+      const x = i * (barW + 4) + 2;
+      const y = H - barH - 20;
+      ctx.fillStyle = '#2D5A45';
+      ctx.fillRect(x, y, barW, barH);
+      ctx.fillStyle = '#666';
+      ctx.font = '9px DM Sans, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(`${r.desde}`, x + barW/2, H - 6);
+      if (r.cant > 0) {
+        ctx.fillStyle = '#333';
+        ctx.fillText(r.cant, x + barW/2, y - 3);
+      }
+    });
     // Auto-completar REF solo si está vacío
     const refInput = document.getElementById('lp-vm2-ref');
     if (!refInput.value || refInput.value === '') {
@@ -1546,6 +1596,22 @@
     }
     document.getElementById('lp-zonas').style.display = 'block';
     window._rangos = celdas;
+
+    // Actualizar columna Zona en tabla del muestreo
+    if (window._renderTabla && window._rangosOrdenados) {
+      const coloresMuest = {
+        venta:   { label: '🟢 Zona de venta',   color: '#2D7D46', bg: '#DFF2EA' },
+        prueba:  { label: '🟡 Zona de prueba',  color: '#B7770D', bg: '#FFF3DC' },
+        noventa: { label: '🔴 No venta',         color: '#C0392B', bg: '#FDECEA' },
+      };
+      // Para cada rango del muestreo, buscar a qué celda de la línea corresponde
+      const zonaPorRango = {};
+      window._rangosOrdenados.forEach(r => {
+        const celda = celdas.find(c => r.desde >= c.vm2 && r.desde < c.vm2 + R);
+        zonaPorRango[r.desde] = celda ? coloresMuest[celda.zona] : { label: '—', color: 'var(--gris-texto)', bg: 'white' };
+      });
+      window._renderTabla(zonaPorRango);
+    }
   };
 
   window.guardarLineaPrecios = async () => {
