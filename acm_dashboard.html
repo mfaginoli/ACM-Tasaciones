@@ -438,6 +438,7 @@
           <div class="form-field"><label>Barrio</label><input type="text" id="f-barrio" placeholder="Ej: Alberdi"></div>
           <div class="form-field"><label>Dirección</label><input type="text" id="f-direccion" placeholder="Ej: Av. Colón 1234"></div>
           <div class="form-field"><label>Link del antecedente</label><input type="text" id="f-link" placeholder="zonaprop.com.ar/..."></div>
+          <div class="form-field"><label>URL imagen captura</label><input type="text" id="f-img" placeholder="drive.google.com/uc?export=view&id=..."></div>
         </div>
         <div class="form-grid-4">
           <div class="form-field"><label>Días publicado</label><input type="number" id="f-dias" placeholder="60"></div>
@@ -752,6 +753,7 @@
       </div>
       <div class="form-actions" style="margin-top:20px">
         <button class="btn-agregar" onclick="guardarRanking()">Guardar ranking</button>
+        <button class="btn-op2" onclick="finalizarTasacion()" style="margin:0;background:#2D5A45">Finalizar tasación ✓</button>
       </div>
     </div>
 
@@ -999,6 +1001,7 @@
       barrio: document.getElementById('f-barrio').value.trim(),
       direccion: document.getElementById('f-direccion').value.trim(),
       link: document.getElementById('f-link').value.trim(),
+      imgUrl: document.getElementById('f-img').value.trim(),
       dias: parseInt(document.getElementById('f-dias').value) || null,
       viz: parseInt(document.getElementById('f-viz').value) || null,
       precio,
@@ -1044,6 +1047,7 @@
     document.getElementById('f-barrio').value = ant.barrio || '';
     document.getElementById('f-direccion').value = ant.direccion || '';
     document.getElementById('f-link').value = ant.link || '';
+    document.getElementById('f-img').value = ant.imgUrl || '';
     document.getElementById('f-dias').value = ant.dias || '';
     document.getElementById('f-viz').value = ant.viz || '';
     document.getElementById('f-precio').value = ant.precio || '';
@@ -1085,6 +1089,7 @@
       barrio: document.getElementById('f-barrio').value.trim(),
       direccion: document.getElementById('f-direccion').value.trim(),
       link: document.getElementById('f-link').value.trim(),
+      imgUrl: document.getElementById('f-img').value.trim(),
       dias: parseInt(document.getElementById('f-dias').value) || null,
       viz: parseInt(document.getElementById('f-viz').value) || null,
       precio,
@@ -1166,7 +1171,7 @@
   // LIMPIAR FORM
   window.limpiarForm = () => {
     window._editingId = null;
-    ['f-barrio','f-direccion','f-link','f-dias','f-viz','f-precio','f-sup-total','f-sup-cub','f-sup-desc','f-ant','f-dorm','f-ban','f-piso']
+    ['f-barrio','f-direccion','f-link','f-img','f-dias','f-viz','f-precio','f-sup-total','f-sup-cub','f-sup-desc','f-ant','f-dorm','f-ban','f-piso']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-tipo').value = '';
     document.getElementById('f-doc').value = '';
@@ -1690,7 +1695,19 @@
       rankingGenerado: true,
       estado: 'En proceso'
     });
-    alert('✓ Ranking guardado.');
+    const ind = document.getElementById('saving-indicator-ranking');
+    if (ind) { ind.style.display = 'inline'; setTimeout(() => ind.style.display = 'none', 2000); }
+  };
+
+  window.finalizarTasacion = async () => {
+    if (!window._currentTasacionId) return;
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+      rankingGenerado: true,
+      estado: 'Completada'
+    });
+    window._currentTasacionId = null;
+    window._tasacionActual = null;
+    showDashboard();
   };
 
   // Agregar navegación desde Op2
