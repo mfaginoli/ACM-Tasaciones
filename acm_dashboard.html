@@ -648,6 +648,103 @@
       </div>
     </div>
 
+    <!-- LÍNEA DE PRECIOS -->
+    <div id="lp-screen" style="display:none">
+      <button class="btn-back" onclick="showOp2()">← Volver al Operativo 2</button>
+      <div class="op1-header">
+        <div>
+          <div class="page-title">Línea de <span>Precios</span></div>
+          <div class="page-sub" id="lp-tasacion-info">Cargando...</div>
+        </div>
+        <button class="btn-new" onclick="showRanking()" style="margin-top:4px">Ir al Ranking →</button>
+      </div>
+
+      <!-- RANGOS -->
+      <div class="op1-form" style="margin-bottom:24px">
+        <div class="op1-form-title">Definir rangos de m²</div>
+        <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px">
+          Los rangos se calculan automáticamente desde el muestreo. Podés ajustarlos manualmente.
+        </div>
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
+          <div class="form-field" style="flex:0 0 140px">
+            <label>Tamaño de rango (USD/m²)</label>
+            <input type="number" id="lp-rango-size" value="100" min="50" max="500" step="50"
+              onchange="calcularRangos()">
+          </div>
+          <div class="form-field" style="flex:0 0 140px">
+            <label>Sup. cubierta propiedad (m²)</label>
+            <input type="number" id="lp-sup" placeholder="40" onchange="calcularRangos()">
+          </div>
+          <button class="btn-agregar" onclick="calcularRangos()" style="margin-top:18px">Calcular →</button>
+        </div>
+
+        <!-- TABLA DE RANGOS -->
+        <div style="overflow-x:auto">
+          <table id="lp-table" style="min-width:600px;border-collapse:collapse">
+            <thead>
+              <tr>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:left;font-size:10px;letter-spacing:1px">Desde (USD/m²)</th>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:left;font-size:10px;letter-spacing:1px">Hasta (USD/m²)</th>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Cant. unidades</th>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Zona</th>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Valor total propiedad</th>
+              </tr>
+            </thead>
+            <tbody id="lp-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LÍNEA VISUAL DE ZONAS -->
+      <div id="lp-zonas" style="display:none;margin-bottom:24px">
+        <div class="section-title" style="margin-bottom:16px">Estrategia de precio</div>
+        <div id="lp-zonas-grid" style="display:grid;gap:2px;margin-bottom:20px"></div>
+        <div id="lp-precio-sugerido-box" style="background:var(--verde-claro);border:2px solid var(--verde);border-radius:2px;padding:20px 28px;display:inline-block">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:6px">Precio sugerido de publicación</div>
+          <div id="lp-precio-sugerido" style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--verde)">—</div>
+          <div id="lp-precio-rango" style="font-size:11px;color:var(--gris-texto);margin-top:4px">Zona de prueba</div>
+        </div>
+        <div class="form-actions" style="margin-top:20px">
+          <button class="btn-agregar" onclick="guardarLineaPrecios()">Guardar línea de precios</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RANKING -->
+    <div id="ranking-screen" style="display:none">
+      <button class="btn-back" onclick="showLineaPrecios()">← Volver a Línea de Precios</button>
+      <div class="op1-header">
+        <div>
+          <div class="page-title">Ranking — <span>Posicionamiento</span></div>
+          <div class="page-sub" id="ranking-tasacion-info">Cargando...</div>
+        </div>
+      </div>
+
+      <div style="font-size:13px;color:var(--gris-texto);margin-bottom:20px;background:var(--blanco);border:1px solid var(--gris-borde);border-radius:2px;padding:16px 20px;">
+        Antecedentes del muestreo ordenados por V/m² de menor a mayor. La propiedad tasada se inserta en la posición que corresponde según el precio sugerido.
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Pos.</th>
+              <th>Dirección</th>
+              <th>Precio</th>
+              <th>Sup. Cub.</th>
+              <th>Días pub.</th>
+              <th>V/m²</th>
+              <th>Tipo</th>
+            </tr>
+          </thead>
+          <tbody id="ranking-tbody"></tbody>
+        </table>
+      </div>
+      <div class="form-actions" style="margin-top:20px">
+        <button class="btn-agregar" onclick="guardarRanking()">Guardar ranking</button>
+      </div>
+    </div>
+
   </main>
 </div>
 
@@ -1290,17 +1387,199 @@
     alert('✓ Resultado guardado en la tasación.');
   };
 
-  // NAVEGACIÓN
+  // ── LÍNEA DE PRECIOS ──────────────────────────────────────────────────────
+  window.showLineaPrecios = () => {
+    document.getElementById('dashboard-screen').style.display = 'none';
+    document.getElementById('op1-screen').style.display = 'none';
+    document.getElementById('op2-screen').style.display = 'none';
+    document.getElementById('lp-screen').style.display = 'block';
+    document.getElementById('ranking-screen').style.display = 'none';
+    document.getElementById('lp-tasacion-info').textContent =
+      document.getElementById('op1-tasacion-info').textContent;
+    // Cargar sup desde propiedad
+    const t = window._tasacionActual;
+    if (t?.propiedad?.supPropia) {
+      document.getElementById('lp-sup').value = t.propiedad.supPropia;
+    }
+    calcularRangos();
+  };
+
+  window.calcularRangos = () => {
+    const ants = window._antecedentes;
+    if (!ants.length) return;
+
+    const rangoSize = parseInt(document.getElementById('lp-rango-size').value) || 100;
+    const sup = parseFloat(document.getElementById('lp-sup').value) || 0;
+
+    // Calcular min y max de vm2
+    const vm2s = ants.map(a => a.vm2).filter(v => v > 0);
+    const minVm2 = Math.floor(Math.min(...vm2s) / rangoSize) * rangoSize;
+    const maxVm2 = Math.ceil(Math.max(...vm2s) / rangoSize) * rangoSize;
+
+    // Armar rangos
+    const rangos = [];
+    for (let desde = minVm2; desde < maxVm2; desde += rangoSize) {
+      const hasta = desde + rangoSize;
+      const cant = ants.filter(a => a.vm2 >= desde && a.vm2 < hasta).length;
+      rangos.push({ desde, hasta, cant });
+    }
+
+    // Determinar zonas automáticamente
+    // Zona venta = rangos con menor vm2 (menor demanda)
+    // Zona prueba = rangos con mayor concentración
+    // Zona no venta = rangos con mayor vm2
+    const maxCant = Math.max(...rangos.map(r => r.cant));
+    const tercio = Math.floor(rangos.length / 3);
+
+    // Render tabla
+    const tbody = document.getElementById('lp-tbody');
+    tbody.innerHTML = rangos.map((r, i) => {
+      let zona = '', zonaColor = '', bgColor = '';
+      if (i < tercio) {
+        zona = 'Zona de venta'; zonaColor = '#2D7D46'; bgColor = '#DFF2EA';
+      } else if (i < tercio * 2) {
+        zona = 'Zona de prueba'; zonaColor = '#B7770D'; bgColor = '#FFF3DC';
+      } else {
+        zona = 'Zona de no venta'; zonaColor = '#C0392B'; bgColor = '#FDECEA';
+      }
+      const valorTotal = sup > 0 ? `USD ${Math.round(r.desde * sup).toLocaleString('es-AR')} – USD ${Math.round(r.hasta * sup).toLocaleString('es-AR')}` : '—';
+      return `<tr style="background:${r.cant > 0 ? bgColor : 'white'}">
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${r.desde.toLocaleString('es-AR')}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${r.hasta.toLocaleString('es-AR')}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${r.cant}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;color:${zonaColor};font-weight:600;font-size:11px">${zona}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px">${valorTotal}</td>
+      </tr>`;
+    }).join('');
+
+    // Render zonas visuales
+    if (sup > 0 && rangos.length > 0) {
+      const zonaGrid = document.getElementById('lp-zonas-grid');
+      zonaGrid.style.gridTemplateColumns = `repeat(${rangos.length}, 1fr)`;
+      zonaGrid.innerHTML = rangos.map((r, i) => {
+        let bg = '';
+        if (i < tercio) bg = '#2D5A45';
+        else if (i < tercio * 2) bg = '#E8A020';
+        else bg = '#C0392B';
+        const valorMid = Math.round(((r.desde + r.hasta) / 2) * sup);
+        return `<div style="background:${bg};color:white;padding:10px 6px;text-align:center;border-radius:2px">
+          <div style="font-size:9px;opacity:0.8;margin-bottom:4px">USD ${r.desde}–${r.hasta}/m²</div>
+          <div style="font-size:11px;font-weight:600">USD ${valorMid.toLocaleString('es-AR')}</div>
+        </div>`;
+      }).join('');
+
+      // Precio sugerido = inicio zona de prueba
+      const zonaPrueba = rangos[tercio];
+      if (zonaPrueba) {
+        const precioSug = Math.round(zonaPrueba.desde * sup);
+        document.getElementById('lp-precio-sugerido').textContent = `USD ${precioSug.toLocaleString('es-AR')}`;
+        document.getElementById('lp-precio-rango').textContent =
+          `USD ${zonaPrueba.desde}/m² × ${sup} m² — Zona de prueba`;
+        window._precioSugeridoLP = precioSug;
+      }
+      document.getElementById('lp-zonas').style.display = 'block';
+    }
+    window._rangos = rangos;
+  };
+
+  window.guardarLineaPrecios = async () => {
+    if (!window._currentTasacionId) return;
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+      lineaPrecios: window._rangos || [],
+      precioSugerido: window._precioSugeridoLP || null
+    });
+    alert('✓ Línea de precios guardada.');
+  };
+
+  // ── RANKING ────────────────────────────────────────────────────────────────
+  window.showRanking = () => {
+    document.getElementById('lp-screen').style.display = 'none';
+    document.getElementById('ranking-screen').style.display = 'block';
+    document.getElementById('ranking-tasacion-info').textContent =
+      document.getElementById('op1-tasacion-info').textContent;
+    renderRanking();
+  };
+
+  window.renderRanking = () => {
+    const ants = [...window._antecedentes];
+    const t = window._tasacionActual;
+    const sup = parseFloat(document.getElementById('lp-sup').value) ||
+                t?.propiedad?.supPropia || 0;
+    const precioSug = window._precioSugeridoLP || t?.precioSugerido || 0;
+    const vm2Propiedad = sup > 0 && precioSug > 0 ? Math.round(precioSug / sup) : null;
+
+    // Ordenar antecedentes por vm2 de menor a mayor
+    ants.sort((a, b) => a.vm2 - b.vm2);
+
+    // Insertar propiedad en posición correcta
+    const propRow = {
+      _esPropiedad: true,
+      direccion: t?.direccion + ', ' + t?.barrio || 'Propiedad tasada',
+      precio: precioSug,
+      supCub: sup,
+      dias: '—',
+      vm2: vm2Propiedad || 0,
+    };
+
+    // Crear lista combinada ordenada
+    const combined = [...ants, propRow].sort((a, b) => a.vm2 - b.vm2);
+
+    const tbody = document.getElementById('ranking-tbody');
+    tbody.innerHTML = combined.map((item, i) => {
+      const esPropiedad = item._esPropiedad;
+      const bg = esPropiedad ? 'background:var(--verde);color:white' : '';
+      const textColor = esPropiedad ? 'color:white' : '';
+      const vm2Color = esPropiedad ? 'color:white;font-weight:700' : 'color:var(--verde);font-weight:600';
+      const tipo = esPropiedad
+        ? `<span style="background:rgba(255,255,255,0.2);color:white;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600">★ PROPIEDAD TASADA</span>`
+        : `<span class="badge badge-dpto">Antecedente</span>`;
+
+      return `<tr style="${bg}">
+        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);font-weight:700;${textColor}">${i+1}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">${item.direccion||'—'}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">USD ${Number(item.precio||0).toLocaleString('es-AR')}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">${item.supCub||'—'} m²</td>
+        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">${item.dias||'—'}</td>
+        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${vm2Color}">USD ${Number(item.vm2||0).toLocaleString('es-AR')}/m²</td>
+        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro)">${tipo}</td>
+      </tr>`;
+    }).join('');
+  };
+
+  window.guardarRanking = async () => {
+    if (!window._currentTasacionId) return;
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+      rankingGenerado: true,
+      estado: 'En proceso'
+    });
+    alert('✓ Ranking guardado.');
+  };
+
+  // Agregar navegación desde Op2
+  window.showOp2 = () => {
+    document.getElementById('dashboard-screen').style.display = 'none';
+    document.getElementById('op1-screen').style.display = 'none';
+    document.getElementById('op2-screen').style.display = 'block';
+    document.getElementById('lp-screen').style.display = 'none';
+    document.getElementById('ranking-screen').style.display = 'none';
+    if (window._antecedentes.length) renderComparables();
+  };
+
   window.showDashboard = () => {
     document.getElementById('dashboard-screen').style.display = 'block';
     document.getElementById('op1-screen').style.display = 'none';
     document.getElementById('op2-screen').style.display = 'none';
+    document.getElementById('lp-screen').style.display = 'none';
+    document.getElementById('ranking-screen').style.display = 'none';
     cargarTasaciones();
   };
+
   window.showOp1 = () => {
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('op1-screen').style.display = 'block';
     document.getElementById('op2-screen').style.display = 'none';
+    document.getElementById('lp-screen').style.display = 'none';
+    document.getElementById('ranking-screen').style.display = 'none';
   };
 
   // Enter en login
