@@ -641,8 +641,9 @@
               <div class="stat-desc" id="res-desc">—</div>
             </div>
           </div>
-          <div class="form-actions">
+          <div class="form-actions" style="display:flex;gap:12px;align-items:center;flex-wrap:wrap;">
             <button class="btn-agregar" onclick="guardarResultado()">Guardar resultado en tasación</button>
+            <button class="btn-op2" onclick="guardarYContinuarALP()" style="margin:0;">Ir a Línea de Precios →</button>
           </div>
         </div>
       </div>
@@ -1385,6 +1386,23 @@
     ind.style.display = 'inline';
     setTimeout(() => ind.style.display = 'none', 2000);
     alert('✓ Resultado guardado en la tasación.');
+  };
+
+  window.guardarYContinuarALP = async () => {
+    const vm2Hom = document.getElementById('res-vm2-hom').textContent;
+    const valorFinal = document.getElementById('res-valor-final').textContent;
+    if (!vm2Hom || vm2Hom === '—' || !valorFinal || valorFinal === '—') {
+      alert('Calculá la ponderación primero antes de continuar.');
+      return;
+    }
+    await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+      precioSugerido: document.getElementById('p-precio').value || null,
+      vm2Homogeneizado: vm2Hom,
+      valorTasacion: valorFinal,
+      comparablesSeleccionados: window._seleccionados,
+      estado: 'En proceso'
+    });
+    showLineaPrecios();
   };
 
   // ── LÍNEA DE PRECIOS ──────────────────────────────────────────────────────
