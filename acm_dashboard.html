@@ -1473,11 +1473,16 @@
       document.getElementById('op1-tasacion-info').textContent ||
       `${window._tasacionActual?.cliente} · ${window._tasacionActual?.direccion}`;
 
-    // Cargar sup desde propiedad
+    // Restaurar valores guardados de LP o cargar desde propiedad
     const t = window._tasacionActual;
-    if (t?.propiedad?.supPropia) {
-      document.getElementById('lp-sup').value = t.propiedad.supPropia;
-    }
+    const lpSup = document.getElementById('lp-sup');
+    const lpRef = document.getElementById('lp-vm2-ref');
+    const lpRango = document.getElementById('lp-rango-size');
+    if (t?.lpSup) lpSup.value = t.lpSup;
+    else if (t?.propiedad?.supPropia) lpSup.value = t.propiedad.supPropia;
+    if (t?.lpVm2Ref) lpRef.value = t.lpVm2Ref;
+    else lpRef.value = '';
+    if (t?.lpRangoSize) lpRango.value = t.lpRangoSize;
     calcularRangos();
   };
 
@@ -1637,11 +1642,20 @@
 
   window.guardarLineaPrecios = async () => {
     if (!window._currentTasacionId) return;
+    const ref = parseFloat(document.getElementById('lp-vm2-ref')?.value) || null;
+    const sup  = parseFloat(document.getElementById('lp-sup')?.value) || null;
+    const rangoSize = parseInt(document.getElementById('lp-rango-size')?.value) || null;
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       lineaPrecios: window._rangos || [],
-      precioSugerido: window._precioSugeridoLP || null
+      precioSugerido: window._precioSugeridoLP || null,
+      lpVm2Ref: ref,
+      lpSup: sup,
+      lpRangoSize: rangoSize
     });
-    alert('✓ Línea de precios guardada.');
+    const ind = document.createElement('span');
+    const btn = event.target;
+    btn.textContent = '✓ Guardado';
+    setTimeout(() => btn.textContent = 'Guardar línea de precios', 2000);
   };
 
   // ── RANKING ────────────────────────────────────────────────────────────────
@@ -1672,9 +1686,9 @@
     const selIds = Array.from(checkboxes).map(c => c.value);
     const ants = window._antecedentes.filter(a => selIds.includes(a.id));
     const t = window._tasacionActual;
-    const sup = parseFloat(document.getElementById('lp-sup').value) ||
-                t?.propiedad?.supPropia || 0;
-    const precioSug = window._precioSugeridoLP || t?.precioSugerido || 0;
+    const lpSup = document.getElementById('lp-sup');
+    const sup = (lpSup ? parseFloat(lpSup.value) : 0) || parseFloat(t?.propiedad?.supPropia) || 0;
+    const precioSug = window._precioSugeridoLP || parseFloat(t?.precioSugerido) || 0;
     const vm2Propiedad = sup > 0 && precioSug > 0 ? Math.round(precioSug / sup) : null;
 
     // Ordenar antecedentes por vm2 de menor a mayor
