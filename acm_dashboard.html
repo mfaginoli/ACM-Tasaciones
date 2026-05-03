@@ -1308,16 +1308,20 @@
       thead.innerHTML += `<th class="pond-header-cell" style="min-width:90px">${c.direccion.split(' ').slice(0,2).join(' ')}<br><small style="font-weight:300;opacity:0.8">USD ${Number(c.vm2).toLocaleString('es-AR')}/m²</small></th>`;
     });
 
-    // Body — inputs por factor
+    // Body — inputs por factor, restaurando valores guardados si existen
+    const factoresGuardados = window._tasacionActual?.factoresPonderacion || [];
     const tbody = document.getElementById('pond-tbody');
     tbody.innerHTML = FACTORES.map((f, fi) => {
-      let cells = comps.map((c, ci) =>
-        `<td style="text-align:center;padding:4px 8px;border-bottom:1px solid var(--gris-claro)">
+      let cells = comps.map((c, ci) => {
+        // Buscar valor guardado para este comparable y factor
+        const guardado = factoresGuardados.find(fg => fg.id === c.id);
+        const val = guardado?.factores?.[f] ?? 1.00;
+        return `<td style="text-align:center;padding:4px 8px;border-bottom:1px solid var(--gris-claro)">
           <input type="number" class="pond-input" id="pond-${fi}-${ci}"
-            value="1.00" step="0.05" min="0.5" max="1.5"
+            value="${val.toFixed(2)}" step="0.05" min="0.5" max="1.5"
             onchange="calcularPonderacion()">
-        </td>`
-      ).join('');
+        </td>`;
+      }).join('');
       return `<tr>
         <td class="pond-factor">${f}</td>
         ${cells}
@@ -1512,23 +1516,33 @@
     const REF = parseFloat(document.getElementById('lp-vm2-ref').value) || 0;
     if (!REF) return;
 
-    // Asignar zona a cada rango del muestreo segun posicion relativa a REF
-    // REF es el techo de la zona de prueba → rango [REF-R, REF) es prueba alta
-    // Mayor que REF → no venta / Menor que REF-2R → venta
-    const conZona = rangos.map(r => {
+    // Rangos del muestreo ordenados de MENOR a MAYOR (como aparecen en tabla)
+    const ordenados = [...rangos].sort((a, b) => a.desde - b.desde);
+    const n = ordenados.length;
+
+    // Estructura fija de zonas sobre los rangos ordenados:
+    // 2 venta (los 2 más bajos) → 2 prueba → 3 no venta (los más altos)
+    // El V/m² REF determina cuál rango es el techo de prueba.
+    // Buscamos el rango cuyo "desde" es el más cercano a REF sin pasarlo.
+    // Ese rango y el anterior son "prueba". Los 2 debajo son "venta". El resto "noventa".
+
+    // Encontrar índice del rango techo de prueba (el rango que contiene REF)
+    let techoIdx = ordenados.findIndex(r => r.desde >= REF);
+    if (techoIdx === -1) techoIdx = n - 1; // si REF supera todos, el último
+    if (techoIdx > 0 && ordenados[techoIdx].desde > REF) techoIdx = techoIdx - 1;
+
+    // Asignar zonas: prueba = techoIdx y techoIdx-1, venta = los 2 anteriores, noventa = el resto arriba
+    const conZona = ordenados.map((r, i) => {
       let zona;
-      if (r.hasta <= REF - rangoSize) {
-        zona = 'venta';
-      } else if (r.hasta <= REF) {
+      if (i === techoIdx || i === techoIdx - 1) {
         zona = 'prueba';
+      } else if (i < techoIdx - 1) {
+        zona = 'venta';
       } else {
         zona = 'noventa';
       }
       return { ...r, zona };
     });
-
-    // Ordenar de mayor a menor para mostrar en tabla (no venta arriba, venta abajo)
-    const ordenados = [...conZona].sort((a, b) => b.desde - a.desde);
 
     const colores = {
       venta:   { bg: '#DFF2EA', texto: '#2D7D46', label: '🟢 Zona de venta' },
@@ -1536,9 +1550,9 @@
       noventa: { bg: '#FDECEA', texto: '#C0392B', label: '🔴 No venta' }
     };
 
-    // Render tabla
+    // Render tabla — de menor a mayor
     const tbody = document.getElementById('lp-tbody');
-    tbody.innerHTML = ordenados.map(r => {
+    tbody.innerHTML = conZona.map(r => {
       const c = colores[r.zona];
       const diasStr = r.diasProm !== null ? `${r.diasProm} días` : '—';
       return `<tr style="background:${c.bg}">
@@ -1549,10 +1563,9 @@
       </tr>`;
     }).join('');
 
-    // Render visual (de mayor a menor: no venta izq → venta der NO, mejor menor→mayor de izq a der)
-    // Mostramos de mayor a menor igual que la tabla
+    // Línea visual — misma estructura, de menor a mayor (venta izq → no venta der)
     const zonaGrid = document.getElementById('lp-zonas-grid');
-    zonaGrid.innerHTML = ordenados.map(r => {
+    zonaGrid.innerHTML = conZona.map(r => {
       const bgMap = { venta: '#2D5A45', prueba: '#E8A020', noventa: '#C0392B' };
       const bg = bgMap[r.zona];
       const valorTotal = sup > 0 ? `<div style="font-size:12px;font-weight:600;margin-top:4px">USD ${(r.desde * sup).toLocaleString('es-AR')}</div>` : '';
@@ -1571,7 +1584,7 @@
       window._precioSugeridoLP = precioSug;
     }
     document.getElementById('lp-zonas').style.display = 'block';
-    window._rangos = ordenados;
+    window._rangos = conZona;
   };
 
   window.guardarLineaPrecios = async () => {
