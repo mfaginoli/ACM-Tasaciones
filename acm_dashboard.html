@@ -1460,122 +1460,83 @@
     calcularRangos();
   };
 
-  // _rangosBase: rangos fijos del muestreo [ { desde, hasta, cant, diasProm } ]
-  // Solo se recalcula cuando cambia el tamaño de rango o la sup.
+  // Tabla del muestreo: rangos fijos de antecedentes con cant. y dias promedio
+  // Solo se recalcula cuando cambia el tamaño de rango
   window._rangosBase = [];
 
   window.calcularRangos = () => {
     const ants = window._antecedentes;
     if (!ants.length) return;
-
     const rangoSize = parseInt(document.getElementById('lp-rango-size').value) || 100;
-
-    // Calcular min y max reales del muestreo
     const vm2s = ants.map(a => parseFloat(a.vm2)).filter(v => v > 0);
     if (!vm2s.length) return;
     const minVm2 = Math.floor(Math.min(...vm2s) / rangoSize) * rangoSize;
     const maxVm2 = Math.ceil(Math.max(...vm2s) / rangoSize) * rangoSize;
-
-    // Armar rangos fijos del muestreo
     window._rangosBase = [];
     for (let desde = minVm2; desde < maxVm2; desde += rangoSize) {
       const hasta = desde + rangoSize;
       const enRango = ants.filter(a => parseFloat(a.vm2) >= desde && parseFloat(a.vm2) < hasta);
       const diasValidos = enRango.map(a => parseInt(a.dias) || 0).filter(d => d > 0);
       window._rangosBase.push({
-        desde,
-        hasta,
+        desde, hasta,
         cant: enRango.length,
         diasProm: diasValidos.length > 0 ? Math.round(diasValidos.reduce((s,d)=>s+d,0)/diasValidos.length) : null
       });
     }
-
-    // Auto-completar V/m2 de referencia desde la ponderacion (solo si el campo esta vacio)
+    // Render tabla muestreo — menor a mayor, sin zonas
+    const tbody = document.getElementById('lp-tbody');
+    tbody.innerHTML = [...window._rangosBase].sort((a,b)=>a.desde-b.desde).map(r => {
+      const diasStr = r.diasProm !== null ? `${r.diasProm} días` : '—';
+      return `<tr>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600;font-size:14px">USD ${r.desde.toLocaleString('es-AR')}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${r.cant}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px;color:var(--gris-texto)">${diasStr}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:11px;color:var(--gris-texto)">—</td>
+      </tr>`;
+    }).join('');
+    // Auto-completar REF solo si está vacío
     const refInput = document.getElementById('lp-vm2-ref');
     if (!refInput.value || refInput.value === '') {
       const hom = document.getElementById('res-vm2-hom')?.textContent || '';
       const num = parseInt(hom.replace(/[^0-9]/g, ''));
-      if (num > 0) {
-        refInput.value = Math.round(num / rangoSize) * rangoSize;
-      } else {
-        refInput.value = Math.round((vm2s.reduce((s,v)=>s+v,0)/vm2s.length) / rangoSize) * rangoSize;
-      }
+      refInput.value = num > 0 ? Math.round(num / rangoSize) * rangoSize
+        : Math.round((vm2s.reduce((s,v)=>s+v,0)/vm2s.length) / rangoSize) * rangoSize;
     }
-
     aplicarZonas();
   };
 
-  // aplicarZonas: solo reposiciona colores sobre los rangos fijos del muestreo.
-  // No toca cant. ni diasProm. Se llama cuando cambia el V/m2 de referencia.
+  // Línea de precios: 7 celdas fijas (2 venta + 2 prueba + 3 no venta)
+  // construidas desde REF hacia arriba y hacia abajo según el tamaño de rango.
+  // Los colores y la cantidad de celdas NO dependen del muestreo.
   window.aplicarZonas = () => {
-    const rangos = window._rangosBase;
-    if (!rangos.length) return;
-
     const rangoSize = parseInt(document.getElementById('lp-rango-size').value) || 100;
     const sup = parseFloat(document.getElementById('lp-sup').value) || 0;
     const REF = parseFloat(document.getElementById('lp-vm2-ref').value) || 0;
     if (!REF) return;
+    const R = rangoSize;
 
-    // Rangos del muestreo ordenados de MENOR a MAYOR (como aparecen en tabla)
-    const ordenados = [...rangos].sort((a, b) => a.desde - b.desde);
-    const n = ordenados.length;
+    // 7 celdas fijas: de menor a mayor
+    // venta: REF-3R, REF-2R | prueba: REF-R, REF | noventa: REF+R, REF+2R, REF+3R
+    const celdas = [
+      { vm2: REF - 3*R, zona: 'venta'   },
+      { vm2: REF - 2*R, zona: 'venta'   },
+      { vm2: REF - R,   zona: 'prueba'  },
+      { vm2: REF,       zona: 'prueba'  },
+      { vm2: REF + R,   zona: 'noventa' },
+      { vm2: REF + 2*R, zona: 'noventa' },
+      { vm2: REF + 3*R, zona: 'noventa' },
+    ];
 
-    // Estructura fija de zonas sobre los rangos ordenados:
-    // 2 venta (los 2 más bajos) → 2 prueba → 3 no venta (los más altos)
-    // El V/m² REF determina cuál rango es el techo de prueba.
-    // Buscamos el rango cuyo "desde" es el más cercano a REF sin pasarlo.
-    // Ese rango y el anterior son "prueba". Los 2 debajo son "venta". El resto "noventa".
-
-    // Encontrar índice del rango techo de prueba (el rango que contiene REF)
-    let techoIdx = ordenados.findIndex(r => r.desde >= REF);
-    if (techoIdx === -1) techoIdx = n - 1; // si REF supera todos, el último
-    if (techoIdx > 0 && ordenados[techoIdx].desde > REF) techoIdx = techoIdx - 1;
-
-    // Asignar zonas: prueba = techoIdx y techoIdx-1, venta = los 2 anteriores, noventa = el resto arriba
-    const conZona = ordenados.map((r, i) => {
-      let zona;
-      if (i === techoIdx || i === techoIdx - 1) {
-        zona = 'prueba';
-      } else if (i < techoIdx - 1) {
-        zona = 'venta';
-      } else {
-        zona = 'noventa';
-      }
-      return { ...r, zona };
-    });
-
-    const colores = {
-      venta:   { bg: '#DFF2EA', texto: '#2D7D46', label: '🟢 Zona de venta' },
-      prueba:  { bg: '#FFF3DC', texto: '#B7770D', label: '🟡 Zona de prueba' },
-      noventa: { bg: '#FDECEA', texto: '#C0392B', label: '🔴 No venta' }
-    };
-
-    // Render tabla — de menor a mayor
-    const tbody = document.getElementById('lp-tbody');
-    tbody.innerHTML = conZona.map(r => {
-      const c = colores[r.zona];
-      const diasStr = r.diasProm !== null ? `${r.diasProm} días` : '—';
-      return `<tr style="background:${c.bg}">
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600;font-size:14px">USD ${r.desde.toLocaleString('es-AR')}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${r.cant}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px;color:var(--gris-texto)">${diasStr}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;color:${c.texto};font-weight:600;font-size:11px;letter-spacing:0.5px">${c.label}</td>
-      </tr>`;
-    }).join('');
-
-    // Línea visual — misma estructura, de menor a mayor (venta izq → no venta der)
+    const bgMap  = { venta: '#2D5A45', prueba: '#E8A020', noventa: '#C0392B' };
     const zonaGrid = document.getElementById('lp-zonas-grid');
-    zonaGrid.innerHTML = conZona.map(r => {
-      const bgMap = { venta: '#2D5A45', prueba: '#E8A020', noventa: '#C0392B' };
-      const bg = bgMap[r.zona];
-      const valorTotal = sup > 0 ? `<div style="font-size:12px;font-weight:600;margin-top:4px">USD ${(r.desde * sup).toLocaleString('es-AR')}</div>` : '';
-      return `<div style="background:${bg};color:white;padding:12px 10px;text-align:center;border-radius:2px;min-width:80px;flex:1">
-        <div style="font-size:10px;opacity:0.8;margin-bottom:2px">USD ${r.desde.toLocaleString('es-AR')}/m²</div>
+    zonaGrid.innerHTML = celdas.map(c => {
+      const valorTotal = sup > 0 ? `<div style="font-size:12px;font-weight:600;margin-top:4px">USD ${Math.round(c.vm2 * sup).toLocaleString('es-AR')}</div>` : '';
+      return `<div style="background:${bgMap[c.zona]};color:white;padding:12px 10px;text-align:center;border-radius:2px;min-width:80px;flex:1">
+        <div style="font-size:10px;opacity:0.8;margin-bottom:2px">USD ${c.vm2.toLocaleString('es-AR')}/m²</div>
         ${valorTotal}
       </div>`;
     }).join('');
 
-    // Precio sugerido = REF (techo zona de prueba)
     if (sup > 0) {
       const precioSug = Math.round(REF * sup);
       document.getElementById('lp-precio-sugerido').textContent = `USD ${precioSug.toLocaleString('es-AR')}`;
@@ -1584,7 +1545,7 @@
       window._precioSugeridoLP = precioSug;
     }
     document.getElementById('lp-zonas').style.display = 'block';
-    window._rangos = conZona;
+    window._rangos = celdas;
   };
 
   window.guardarLineaPrecios = async () => {
