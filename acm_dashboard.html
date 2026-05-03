@@ -1684,7 +1684,8 @@
     // Solo los antecedentes tildados
     const checkboxes = document.querySelectorAll('#ranking-selector input[type=checkbox]:checked');
     const selIds = Array.from(checkboxes).map(c => c.value);
-    const ants = window._antecedentes.filter(a => selIds.includes(a.id));
+    const selIdsNum = selIds.map(id => Number(id));
+    const ants = window._antecedentes.filter(a => selIdsNum.includes(Number(a.id)));
     const t = window._tasacionActual;
     const lpSup = document.getElementById('lp-sup');
     const sup = (lpSup ? parseFloat(lpSup.value) : 0) || parseFloat(t?.propiedad?.supPropia) || 0;
@@ -1732,7 +1733,7 @@
   window.guardarRanking = async () => {
     if (!window._currentTasacionId) return;
     const checkboxes = document.querySelectorAll('#ranking-selector input[type=checkbox]:checked');
-    const selIds = Array.from(checkboxes).map(c => c.value);
+    const selIds = Array.from(checkboxes).map(c => Number(c.value));
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
       rankingSeleccionados: selIds,
