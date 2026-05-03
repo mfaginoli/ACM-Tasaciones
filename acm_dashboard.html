@@ -658,7 +658,7 @@
           <div class="page-title">Línea de <span>Precios</span></div>
           <div class="page-sub" id="lp-tasacion-info">Cargando...</div>
         </div>
-        <button class="btn-new" onclick="showRanking()" style="margin-top:4px">Ir al Ranking →</button>
+
       </div>
 
       <!-- CONTROLES -->
@@ -717,6 +717,7 @@
         </div>
         <div class="form-actions" style="margin-top:20px">
           <button class="btn-agregar" onclick="guardarLineaPrecios()">Guardar línea de precios</button>
+          <button class="btn-op2" onclick="showRanking()" style="margin:0">Ir al Ranking →</button>
         </div>
       </div>
     </div>
@@ -732,7 +733,16 @@
       </div>
 
       <div style="font-size:13px;color:var(--gris-texto);margin-bottom:20px;background:var(--blanco);border:1px solid var(--gris-borde);border-radius:2px;padding:16px 20px;">
-        Antecedentes del muestreo ordenados por V/m² de menor a mayor. La propiedad tasada se inserta en la posición que corresponde según el precio sugerido.
+        Seleccioná los antecedentes que querés incluir en el ranking. La propiedad tasada se inserta en la posición que corresponde según el precio sugerido.
+      </div>
+
+      <!-- Selector de antecedentes para ranking -->
+      <div class="op1-form" style="margin-bottom:20px">
+        <div class="op1-form-title">Seleccionar antecedentes para el ranking</div>
+        <div id="ranking-selector" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px"></div>
+        <div style="margin-top:12px">
+          <button class="btn-agregar" onclick="renderRanking()" style="padding:8px 18px;font-size:11px">Actualizar ranking →</button>
+        </div>
       </div>
 
       <div class="table-wrap">
@@ -1640,11 +1650,27 @@
     document.getElementById('ranking-screen').style.display = 'block';
     document.getElementById('ranking-tasacion-info').textContent =
       document.getElementById('op1-tasacion-info').textContent;
+
+    // Armar checkboxes de selección — por defecto todos tildados
+    const t = window._tasacionActual;
+    const selGuardados = t?.rankingSeleccionados || null;
+    const selector = document.getElementById('ranking-selector');
+    selector.innerHTML = window._antecedentes.map(a => {
+      const checked = selGuardados ? selGuardados.includes(a.id) : true;
+      return `<label style="display:flex;align-items:center;gap:6px;background:var(--blanco);border:1px solid var(--gris-borde);border-radius:2px;padding:6px 12px;cursor:pointer;font-size:12px">
+        <input type="checkbox" id="rank-chk-${a.id}" value="${a.id}" ${checked ? 'checked' : ''}>
+        ${a.direccion} — USD ${Number(a.vm2||0).toLocaleString('es-AR')}/m²
+      </label>`;
+    }).join('');
+
     renderRanking();
   };
 
   window.renderRanking = () => {
-    const ants = [...window._antecedentes];
+    // Solo los antecedentes tildados
+    const checkboxes = document.querySelectorAll('#ranking-selector input[type=checkbox]:checked');
+    const selIds = Array.from(checkboxes).map(c => c.value);
+    const ants = window._antecedentes.filter(a => selIds.includes(a.id));
     const t = window._tasacionActual;
     const sup = parseFloat(document.getElementById('lp-sup').value) ||
                 t?.propiedad?.supPropia || 0;
@@ -1691,8 +1717,11 @@
 
   window.guardarRanking = async () => {
     if (!window._currentTasacionId) return;
+    const checkboxes = document.querySelectorAll('#ranking-selector input[type=checkbox]:checked');
+    const selIds = Array.from(checkboxes).map(c => c.value);
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
+      rankingSeleccionados: selIds,
       estado: 'En proceso'
     });
     const ind = document.getElementById('saving-indicator-ranking');
