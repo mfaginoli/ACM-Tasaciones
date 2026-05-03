@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>ACM Tasaciones — Matías Faginoli</title>
-<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
 <style>
   :root {
     --verde: #2D5A45;
@@ -755,6 +756,7 @@
       </div>
       <div class="form-actions" style="margin-top:20px">
         <button class="btn-agregar" onclick="guardarRanking()">Guardar ranking</button>
+        <button class="btn-op2" onclick="generarPDF()" style="margin:0;background:#3D7A5E">Generar PDF ↓</button>
         <button class="btn-op2" onclick="finalizarTasacion()" style="margin:0;background:#2D5A45">Finalizar tasación ✓</button>
       </div>
     </div>
@@ -924,7 +926,10 @@
           <td>${fecha}</td>
           <td><span class="badge ${badgeEst}">${t.estado}</span></td>
           <td>${precio}</td>
-          <td><button class="btn-ver" onclick="abrirTasacion('${t.id}')">Abrir →</button></td>
+          <td style="display:flex;gap:6px;align-items:center">
+            ${t.estado === 'Completada' ? `<button class="btn-ver" style="background:var(--verde-medio);color:white;border:none" onclick="generarPDFDesdeDashboard('${t.id}')">PDF ↓</button>` : ''}
+            <button class="btn-ver" onclick="abrirTasacion('${t.id}')">Abrir →</button>
+          </td>
         </tr>`;
       }).join('');
     } catch(e) {
@@ -1893,6 +1898,498 @@
   document.getElementById('login-pass').addEventListener('keypress', e => {
     if (e.key === 'Enter') doLogin();
   });
+  // ── GENERACIÓN PDF ────────────────────────────────────────────────────────
+
+  const LOGO_MF_URL = 'https://raw.githubusercontent.com/mfaginoli/ACM-Tasaciones/main/logo_matiaz_vectorizado.png';
+  const LOGO_LAINMO_URL = 'https://raw.githubusercontent.com/mfaginoli/ACM-Tasaciones/main/laInmo_transparente.png';
+
+  const _loadImg = (url) => new Promise((res, rej) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const c = document.createElement('canvas');
+      c.width = img.width; c.height = img.height;
+      c.getContext('2d').drawImage(img, 0, 0);
+      res(c.toDataURL('image/png'));
+    };
+    img.onerror = () => res(null);
+    img.src = url;
+  });
+
+  const _pdfAddPage = (doc, bg = '#F0EFED') => {
+    doc.addPage();
+    doc.setFillColor(bg);
+    doc.rect(0, 0, 297, 210, 'F');
+  };
+
+  const _verde = [45, 90, 69];
+  const _gris  = [240, 239, 237];
+  const _negro = [50, 50, 50];
+
+  const _pdfHeader = (doc, logoMF, logoLI) => {
+    if (logoMF) doc.addImage(logoMF, 'PNG', 10, 6, 28, 14);
+    if (logoLI) doc.addImage(logoLI, 'PNG', 259, 7, 28, 12);
+  };
+
+  const _pdfFooter = (doc, pageNum) => {
+    doc.setFillColor(..._verde);
+    doc.rect(0, 204, 297, 6, 'F');
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(7);
+    doc.setFont('helvetica','normal');
+    doc.text('www.matiasfaginoli.com.ar', 148, 208, { align:'center' });
+    doc.text(String(pageNum), 285, 208);
+  };
+
+  window.generarPDFDesdeDashboard = async (id) => {
+    try {
+      const snap = await getDocs(collection(db, 'tasaciones'));
+      let tasacion = null;
+      snap.forEach(d => { if (d.id === id) tasacion = { id: d.id, ...d.data() }; });
+      if (!tasacion) { alert('No se encontró la tasación.'); return; }
+      window._tasacionActual = tasacion;
+      window._antecedentes = tasacion.antecedentes || [];
+      window._precioSugeridoLP = tasacion.precioSugerido || null;
+      await _buildPDF(tasacion);
+    } catch(e) { console.error(e); alert('Error al generar PDF.'); }
+  };
+
+  window.generarPDF = async () => {
+    const t = window._tasacionActual;
+    if (!t) { alert('No hay tasación activa.'); return; }
+    await _buildPDF(t);
+  };
+
+  window._buildPDF = async (t) => {
+    const btn = document.querySelector('button[onclick="generarPDF()"]') ||
+                document.querySelector(`button[onclick="generarPDFDesdeDashboard('${t.id}')"]`);
+    if (btn) { btn.textContent = 'Generando...'; btn.disabled = true; }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'landscape', unit: 'mm', format: 'a4' });
+
+    // Cargar logos
+    const [logoMF, logoLI] = await Promise.all([
+      _loadImg(LOGO_MF_URL), _loadImg(LOGO_LAINMO_URL)
+    ]);
+
+    const ants = t.antecedentes || [];
+    const precioSug = t.precioSugerido || 0;
+    const rankingFinal = t.rankingFinal || [];
+
+    // ── PÁG 1: PORTADA ─────────────────────────────────────────────────────
+    doc.setFillColor(..._gris);
+    doc.rect(0, 0, 297, 210, 'F');
+    // Banda verde inferior
+    doc.setFillColor(..._verde);
+    doc.rect(0, 175, 297, 35, 'F');
+    // Logos
+    if (logoMF) doc.addImage(logoMF, 'PNG', 12, 10, 40, 20);
+    if (logoLI) doc.addImage(logoLI, 'PNG', 245, 10, 40, 17);
+    // Título
+    doc.setTextColor(..._verde);
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(72);
+    doc.text('ACM', 30, 110);
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(22);
+    doc.text('Análisis Comparativo de Mercado', 30, 128);
+    // Web en banda verde
+    doc.setTextColor(255,255,255);
+    doc.setFontSize(13);
+    doc.text('www.matiasfaginoli.com.ar', 148, 196, { align:'center' });
+
+    // ── PÁG 2: PRESENTACIÓN ────────────────────────────────────────────────
+    _pdfAddPage(doc);
+    // Mitad izquierda verde oscuro (foto propiedad placeholder)
+    doc.setFillColor(..._verde);
+    doc.rect(0, 0, 120, 210, 'F');
+    // Foto propiedad si existe
+    if (t.imgPropiedadUrl) {
+      try {
+        const imgProp = await _loadImg(t.imgPropiedadUrl);
+        if (imgProp) {
+          doc.addImage(imgProp, 'PNG', 0, 0, 120, 210);
+          doc.setFillColor(45,90,69,0.4);
+        }
+      } catch(e) {}
+    }
+    // Dirección grande sobre la imagen
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(20);
+    doc.text(t.direccion || '', 60, 175, { align:'center', maxWidth: 110 });
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(11);
+    doc.text(`${t.barrio} · ${t.ciudad || 'Córdoba Capital'}`, 60, 185, { align:'center' });
+    // Parte derecha
+    doc.setTextColor(..._negro);
+    // Fecha
+    doc.setFontSize(10);
+    doc.setFont('helvetica','italic');
+    doc.text(`Córdoba, ${t.fecha || new Date().toLocaleDateString('es-AR', {day:'2-digit',month:'long',year:'numeric'})}`, 285, 15, { align:'right' });
+    // Nombre cliente
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(22);
+    doc.setTextColor(..._verde);
+    doc.text(`Sr/a. ${t.cliente || ''}`, 135, 55, { maxWidth: 155 });
+    // Texto intro
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(10);
+    doc.setTextColor(..._negro);
+    const introText = 'El presente análisis se basa en una lectura actual del mercado, combinando el contexto general del sector con los atributos propios de la propiedad, a fin de definir su correcto posicionamiento.';
+    const introLines = doc.splitTextToSize(introText, 148);
+    doc.text(introLines, 135, 100);
+    _pdfHeader(doc, null, null);
+    _pdfFooter(doc, 2);
+
+    // ── PÁG 3: INTERPRETACIÓN DEL MERCADO ──────────────────────────────────
+    _pdfAddPage(doc);
+    doc.setTextColor(..._verde);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(36);
+    doc.text('Interpretación', 20, 45);
+    doc.text('del Mercado', 20, 62);
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(9.5);
+    doc.setTextColor(..._negro);
+    const mercadoTexto = [
+      'El mercado inmobiliario actual no está detenido, sino atravesando una etapa de transformación que redefine cómo se concretan las operaciones.',
+      'En Córdoba, si bien algunos valores han mostrado recuperación, la actividad no crece al mismo ritmo, lo que da lugar a un mercado más selectivo, con mayor oferta y compradores que toman decisiones de manera más analítica.',
+      'En este contexto, ya no alcanza con publicar una propiedad a determinado valor, sino que es clave entender que los precios solo se validan cuando encuentran una demanda real. Hoy, las operaciones se concretan en aquellos casos donde existe coherencia entre precio, las prestaciones y el posicionamiento.',
+      'A su vez, el protagonismo pasó al comprador final, que prioriza calidad de vida, ubicación y funcionalidad, lo que eleva el nivel de exigencia y hace que cada propiedad compita desde una propuesta integral, no solo desde el precio.',
+      'Por eso, lograr una venta efectiva implica trabajar con una estrategia clara desde el inicio, basada en una tasación realista, una correcta lectura del mercado y una presentación alineada a la demanda actual.'
+    ];
+    let y3 = 85;
+    mercadoTexto.forEach(p => {
+      const lines = doc.splitTextToSize(p, 257);
+      doc.text(lines, 20, y3);
+      y3 += lines.length * 5.5 + 4;
+    });
+    _pdfHeader(doc, logoMF, logoLI);
+    _pdfFooter(doc, 3);
+
+    // ── PÁG 4: CÓMO SE COMPORTA EL COMPRADOR ──────────────────────────────
+    _pdfAddPage(doc);
+    doc.setTextColor(..._verde);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(36);
+    doc.text('Cómo se comporta', 20, 40);
+    doc.text('el comprador.', 20, 57);
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(9.5);
+    doc.setTextColor(..._negro);
+    const compradorTexto = [
+      'Con el paso del tiempo, el comprador adquiere un alto nivel de conocimiento del mercado. Esto se debe al fácil acceso a la información y a la posibilidad de definir con precisión sus criterios de búsqueda.',
+      'En un contexto donde la oferta supera a la demanda, la gran cantidad de propiedades disponibles lleva al comprador a utilizar filtros en los principales portales inmobiliarios, lo que le permite enfocar su búsqueda según necesidades y preferencias concretas.',
+      'Entre los filtros más utilizados se destacan el tipo de propiedad, las comodidades y el presupuesto.',
+      'En cuanto a la ubicación, si bien sigue siendo un factor relevante, hoy pierde rigidez. Gracias a la conectividad y a los distintos corredores de la ciudad, muchos compradores amplían su zona de interés y priorizan prestaciones y tipología por sobre la ubicación exacta.'
+    ];
+    let y4 = 78;
+    compradorTexto.forEach(p => {
+      const lines = doc.splitTextToSize(p, 257);
+      doc.text(lines, 20, y4);
+      y4 += lines.length * 5.5 + 5;
+    });
+    _pdfHeader(doc, logoMF, logoLI);
+    _pdfFooter(doc, 4);
+
+    // ── PÁG 5: METODOLOGÍA APLICADA ────────────────────────────────────────
+    _pdfAddPage(doc);
+    doc.setTextColor(..._verde);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(36);
+    doc.text('Metodología', 20, 50);
+    doc.text('Aplicada', 20, 67);
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(11);
+    doc.setTextColor(..._negro);
+    const metTexto = 'Se aplica un análisis comparativo de mercado para identificar la competencia directa y definir una estrategia de posicionamiento adecuada, alineada a las condiciones actuales y orientada a una comercialización efectiva.';
+    const metLines = doc.splitTextToSize(metTexto, 100);
+    doc.text(metLines, 20, 95);
+    _pdfHeader(doc, logoMF, logoLI);
+    _pdfFooter(doc, 5);
+
+    // ── PÁG 6+: ANTECEDENTES (2 por página) ───────────────────────────────
+    let pageNum = 6;
+    for (let i = 0; i < ants.length; i += 2) {
+      _pdfAddPage(doc);
+      doc.setTextColor(..._verde);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(28);
+      doc.text('ANTECEDENTES', 148, 22, { align:'center' });
+
+      for (let j = 0; j < 2; j++) {
+        const ant = ants[i + j];
+        if (!ant) break;
+        const col = j === 0 ? 12 : 155;
+        const boxW = 130;
+
+        // Marco imagen
+        doc.setDrawColor(200,200,200);
+        doc.setFillColor(220,220,220);
+        doc.roundedRect(col, 30, boxW, 75, 2, 2, 'FD');
+
+        // Cargar imagen del antecedente
+        if (ant.imgUrl) {
+          try {
+            const imgAnt = await _loadImg(ant.imgUrl);
+            if (imgAnt) doc.addImage(imgAnt, 'PNG', col, 30, boxW, 75, '', 'FAST');
+          } catch(e) {}
+        } else {
+          doc.setTextColor(160,160,160);
+          doc.setFontSize(9);
+          doc.text('Sin imagen', col + boxW/2, 68, { align:'center' });
+        }
+
+        // Info debajo de imagen
+        doc.setTextColor(..._verde);
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(9);
+        doc.text('Ubicación', col, 115);
+        doc.setFont('helvetica','normal');
+        doc.setTextColor(..._negro);
+        doc.setFontSize(9);
+        doc.text(`${ant.direccion || '—'}`, col, 121);
+
+        doc.setTextColor(..._verde);
+        doc.setFont('helvetica','bold');
+        doc.text('Precio', col, 132);
+        doc.setFont('helvetica','normal');
+        doc.setTextColor(..._negro);
+        doc.text(`USD ${Number(ant.precio||0).toLocaleString('es-AR')}`, col, 138);
+
+        doc.setTextColor(..._verde);
+        doc.setFont('helvetica','bold');
+        doc.text('Sup. Cubierta', col, 149);
+        doc.setFont('helvetica','normal');
+        doc.setTextColor(..._negro);
+        doc.text(`${ant.supCub || '—'} m²`, col, 155);
+
+        doc.setTextColor(..._verde);
+        doc.setFont('helvetica','bold');
+        doc.text('V/m²', col, 166);
+        doc.setFont('helvetica','normal');
+        doc.setTextColor(..._negro);
+        doc.text(`USD ${Number(ant.vm2||0).toLocaleString('es-AR')}`, col, 172);
+
+        if (ant.link) {
+          doc.setTextColor(..._verde);
+          doc.setFont('helvetica','bold');
+          doc.text('Link', col, 183);
+          doc.setFont('helvetica','normal');
+          doc.setTextColor(60,100,180);
+          doc.setFontSize(7.5);
+          const linkShort = ant.link.length > 55 ? ant.link.substring(0,55)+'...' : ant.link;
+          doc.textWithLink(linkShort, col, 189, { url: ant.link });
+        }
+      }
+      _pdfHeader(doc, logoMF, logoLI);
+      _pdfFooter(doc, pageNum);
+      pageNum++;
+    }
+
+    // ── PÁG: LÍNEA DE PRECIOS ─────────────────────────────────────────────
+    _pdfAddPage(doc);
+    doc.setTextColor(..._verde);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(32);
+    doc.text('Línea de Precios', 20, 35);
+    doc.setFontSize(18);
+    doc.setFont('helvetica','normal');
+    doc.text('Estrategia', 20, 48);
+
+    const lp = t.lineaPrecios || [];
+    if (lp.length > 0) {
+      const sup = t.lpSup || t.propiedad?.supPropia || 0;
+      const colores = { venta:[45,90,69], prueba:[232,160,32], noventa:[192,57,43] };
+      const cellW = Math.min(30, 250 / lp.length);
+      lp.forEach((c, i) => {
+        const col = colores[c.zona] || _negro;
+        doc.setFillColor(...col);
+        doc.rect(20 + i * cellW, 95, cellW - 1, 20, 'F');
+        doc.setTextColor(255,255,255);
+        doc.setFontSize(7);
+        doc.setFont('helvetica','bold');
+        doc.text(`USD ${Number(c.vm2||0).toLocaleString('es-AR')}`, 20 + i * cellW + cellW/2, 103, { align:'center' });
+        if (sup > 0) {
+          doc.setFont('helvetica','normal');
+          doc.setFontSize(6.5);
+          doc.text(`USD ${Math.round((c.vm2||0)*sup).toLocaleString('es-AR')}`, 20 + i * cellW + cellW/2, 110, { align:'center' });
+        }
+      });
+      // Labels de zonas
+      doc.setTextColor(..._negro);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(8);
+      doc.text('zona de venta', 35, 122);
+      doc.text('zona de prueba', 140, 122, { align:'center' });
+      doc.text('zona de no venta', 265, 122, { align:'right' });
+    }
+
+    // Precio sugerido
+    if (precioSug) {
+      doc.setFillColor(240,239,237);
+      doc.setDrawColor(..._verde);
+      doc.roundedRect(20, 135, 120, 30, 2, 2, 'FD');
+      doc.setTextColor(..._gris.map(v=>v-50));
+      doc.setFontSize(7);
+      doc.setFont('helvetica','normal');
+      doc.text('PRECIO SUGERIDO DE PUBLICACIÓN', 80, 143, { align:'center' });
+      doc.setTextColor(..._verde);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(22);
+      doc.text(`USD ${Number(precioSug).toLocaleString('es-AR')}`, 80, 158, { align:'center' });
+    }
+    _pdfHeader(doc, logoMF, logoLI);
+    _pdfFooter(doc, pageNum);
+    pageNum++;
+
+    // ── PÁG: RECOMENDACIONES ──────────────────────────────────────────────
+    _pdfAddPage(doc);
+    doc.setTextColor(..._verde);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(28);
+    doc.text('Recomendaciones', 20, 35);
+    doc.setFontSize(16);
+    doc.setFont('helvetica','normal');
+    doc.text('Incorporación al mercado', 20, 48);
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(10);
+    doc.setTextColor(..._negro);
+    const recTexto = [
+      'En conclusión, como indiqué anteriormente el proceso de ventas funciona si el precio es competitivo.',
+      'No hay que olvidarse que un comprador en el proceso de compra se vuelve un especialista en precios de mercado por su tarea de búsqueda permanente. Por lo tanto, lo que está fuera de precio ni lo consulta.',
+      'Por ese motivo no es conveniente abultar el precio ya que desalienta a los posibles interesados. El precio debe ser un elemento de atracción conjuntamente con una promoción profesional.'
+    ];
+    let yr = 65;
+    recTexto.forEach(p => {
+      const lines = doc.splitTextToSize(p, 257);
+      doc.text(lines, 20, yr);
+      yr += lines.length * 5.5 + 5;
+    });
+    if (precioSug) {
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(13);
+      doc.setTextColor(..._verde);
+      doc.text(`PROPUESTA DE PRECIO DE PUBLICACIÓN: USD ${Number(precioSug).toLocaleString('es-AR')}`, 20, yr + 10);
+    }
+    _pdfHeader(doc, logoMF, logoLI);
+    _pdfFooter(doc, pageNum);
+    pageNum++;
+
+    // ── PÁG: PROCESO COMERCIAL ────────────────────────────────────────────
+    _pdfAddPage(doc);
+    doc.setTextColor(..._verde);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(28);
+    doc.text('Proceso Comercial', 20, 35);
+    doc.setFontSize(16);
+    doc.setFont('helvetica','normal');
+    doc.text('Análisis y Calibraciones', 20, 48);
+    doc.setFont('helvetica','italic');
+    doc.setFontSize(10);
+    doc.setTextColor(..._negro);
+    const procTexto = [
+      'Si transcurridos los primeros 30 días el nivel de interacciones no se traduce en consultas concretas o visitas, será necesario ajustar el posicionamiento de la propiedad recorriendo la línea de precios de forma descendente, con el objetivo de alinearla a la demanda real del mercado.',
+      'Los ajustes sugeridos serán del orden del 2,5% al 3,5%, buscando generar un impacto efectivo sin afectar significativamente el margen de negociación, el cual será definido en conjunto.',
+      'Es importante entender que el proceso de comercialización es un trabajo conjunto entre el profesional inmobiliario y el propietario. Mi rol será aplicar las herramientas y la estrategia necesarias para lograr un correcto ingreso al mercado, mientras que la toma de decisiones en cada instancia del proceso estará en manos del propietario.'
+    ];
+    let yp = 68;
+    procTexto.forEach(p => {
+      const lines = doc.splitTextToSize(p, 257);
+      doc.text(lines, 20, yp);
+      yp += lines.length * 5.5 + 6;
+    });
+    _pdfHeader(doc, logoMF, logoLI);
+    _pdfFooter(doc, pageNum);
+    pageNum++;
+
+    // ── PÁG: RANKING ─────────────────────────────────────────────────────
+    if (rankingFinal.length > 0) {
+      _pdfAddPage(doc);
+      doc.setTextColor(..._verde);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(32);
+      doc.text('Ranking — Posicionamiento', 20, 30);
+      doc.setFont('helvetica','normal');
+      doc.setFontSize(9);
+      doc.setTextColor(..._negro);
+      doc.text('La presente tabla muestra el posicionamiento que adoptaría la propiedad frente a la competencia dentro del muestreo utilizado.', 20, 40, { maxWidth: 257 });
+
+      // Tabla ranking
+      const cols = [15, 80, 35, 25, 25, 35, 40];
+      const headers = ['Pos.', 'Dirección', 'Precio', 'Sup.Cub.', 'Días', 'V/m²', 'Tipo'];
+      let yt = 52;
+      // Header
+      doc.setFillColor(..._verde);
+      doc.rect(15, yt, 267, 8, 'F');
+      doc.setTextColor(255,255,255);
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(7.5);
+      let xh = 17;
+      headers.forEach((h, i) => { doc.text(h, xh, yt+5.5); xh += cols[i]; });
+      yt += 8;
+
+      rankingFinal.forEach((item, idx) => {
+        const esProp = item._esPropiedad;
+        if (esProp) {
+          doc.setFillColor(..._verde);
+          doc.setTextColor(255,255,255);
+        } else {
+          doc.setFillColor(idx%2===0?245:255, idx%2===0?245:255, idx%2===0?245:255);
+          doc.setTextColor(..._negro);
+        }
+        doc.rect(15, yt, 267, 7, 'F');
+        doc.setFont('helvetica', esProp?'bold':'normal');
+        doc.setFontSize(7.5);
+        let xr = 17;
+        const vals = [
+          String(idx+1),
+          (item.direccion||'—').substring(0,28),
+          `USD ${Number(item.precio||0).toLocaleString('es-AR')}`,
+          `${item.supCub||'—'} m²`,
+          item.dias ? String(item.dias) : '—',
+          `USD ${Number(item.vm2||0).toLocaleString('es-AR')}`,
+          esProp ? '★ TASADA' : 'Antecedente'
+        ];
+        vals.forEach((v,i) => { doc.text(v, xr, yt+4.8); xr += cols[i]; });
+        yt += 7;
+        if (yt > 195) { _pdfAddPage(doc); yt = 20; }
+      });
+      _pdfHeader(doc, logoMF, logoLI);
+      _pdfFooter(doc, pageNum);
+      pageNum++;
+    }
+
+    // ── PÁG FINAL: CONTACTO ───────────────────────────────────────────────
+    _pdfAddPage(doc, '#3D5C4A');
+    doc.setFillColor(45,90,69);
+    doc.rect(0,0,297,210,'F');
+    // Info contacto
+    doc.setTextColor(255,255,255);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(13);
+    doc.text('+54 3516 - 008736', 30, 80);
+    doc.text('mfaginoli@gmail.com', 30, 97);
+    doc.text('www.lainmo.com.ar', 30, 114);
+    doc.text('Rogelio Nores Martinez 2649 6 D', 30, 131);
+    doc.text('B. Jardín — Córdoba Capital', 30, 142);
+    doc.setFontSize(10);
+    doc.setTextColor(180,210,195);
+    doc.text('Empresa asociada a LaInmo de Córdoba.', 30, 168);
+    // Logo MF
+    if (logoMF) doc.addImage(logoMF, 'PNG', 175, 60, 80, 40);
+    // Logo LaInmo
+    if (logoLI) doc.addImage(logoLI, 'PNG', 185, 130, 65, 28);
+
+    // Guardar
+    const nombre = `ACM_${(t.cliente||'cliente').replace(/\s+/g,'_')}_${t.direccion||''}.pdf`.replace(/[^a-zA-Z0-9_\-\.]/g,'_');
+    doc.save(nombre);
+
+    if (btn) { btn.textContent = 'Generar PDF ↓'; btn.disabled = false; }
+  };
+
 </script>
 </body>
 </html>
