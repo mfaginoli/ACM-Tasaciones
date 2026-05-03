@@ -1388,14 +1388,28 @@
   };
 
   // ── LÍNEA DE PRECIOS ──────────────────────────────────────────────────────
-  window.showLineaPrecios = () => {
+  window.showLineaPrecios = async () => {
+    if (!window._currentTasacionId) { alert('Abrí una tasación primero.'); return; }
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('op1-screen').style.display = 'none';
     document.getElementById('op2-screen').style.display = 'none';
     document.getElementById('lp-screen').style.display = 'block';
     document.getElementById('ranking-screen').style.display = 'none';
+
+    // Recargar tasación
+    try {
+      const snap = await getDocs(collection(db, 'tasaciones'));
+      let tasacion = null;
+      snap.forEach(d => { if(d.id === window._currentTasacionId) tasacion = { id:d.id, ...d.data() }; });
+      if (!tasacion) return;
+      window._tasacionActual = tasacion;
+      window._antecedentes = tasacion.antecedentes || [];
+    } catch(e) { console.error(e); }
+
     document.getElementById('lp-tasacion-info').textContent =
-      document.getElementById('op1-tasacion-info').textContent;
+      document.getElementById('op1-tasacion-info').textContent ||
+      `${window._tasacionActual?.cliente} · ${window._tasacionActual?.direccion}`;
+
     // Cargar sup desde propiedad
     const t = window._tasacionActual;
     if (t?.propiedad?.supPropia) {
@@ -1556,13 +1570,51 @@
   };
 
   // Agregar navegación desde Op2
-  window.showOp2 = () => {
+  window.showOp2 = async () => {
+    if (!window._currentTasacionId) { alert('Abrí una tasación primero.'); return; }
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('op1-screen').style.display = 'none';
     document.getElementById('op2-screen').style.display = 'block';
     document.getElementById('lp-screen').style.display = 'none';
     document.getElementById('ranking-screen').style.display = 'none';
-    if (window._antecedentes.length) renderComparables();
+
+    // Recargar tasación desde Firebase para tener datos frescos
+    try {
+      const snap = await getDocs(collection(db, 'tasaciones'));
+      let tasacion = null;
+      snap.forEach(d => { if(d.id === window._currentTasacionId) tasacion = { id:d.id, ...d.data() }; });
+      if (!tasacion) return;
+
+      window._tasacionActual = tasacion;
+      window._antecedentes = tasacion.antecedentes || [];
+      window._seleccionados = tasacion.comparablesSeleccionados || [];
+
+      // Info header
+      document.getElementById('op2-tasacion-info').textContent =
+        `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tasacion.tipo === 'dpto' ? 'Departamento' : tasacion.tipo}`;
+
+      // Cargar datos propiedad si ya estaban guardados
+      if (tasacion.propiedad) {
+        document.getElementById('p-barrio').value = tasacion.propiedad.barrio || tasacion.barrio || '';
+        document.getElementById('p-direccion').value = tasacion.propiedad.direccion || tasacion.direccion || '';
+        document.getElementById('p-precio').value = tasacion.propiedad.precio || '';
+        document.getElementById('p-sup-propia').value = tasacion.propiedad.supPropia || '';
+        document.getElementById('p-sup-balcon').value = tasacion.propiedad.supBalcon || '';
+        calcularSupHom();
+      } else {
+        // Pre-cargar desde datos de la tasación
+        document.getElementById('p-barrio').value = tasacion.barrio || '';
+        document.getElementById('p-direccion').value = tasacion.direccion || '';
+      }
+
+      renderComparables();
+
+      // Si ya había ponderación guardada, mostrar sección
+      if (window._seleccionados.length > 0) {
+        document.getElementById('pond-section').style.display = 'block';
+        construirTablaPonderacion();
+      }
+    } catch(e) { console.error(e); }
   };
 
   window.showDashboard = () => {
