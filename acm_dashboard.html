@@ -660,35 +660,38 @@
         <button class="btn-new" onclick="showRanking()" style="margin-top:4px">Ir al Ranking →</button>
       </div>
 
-      <!-- RANGOS -->
+      <!-- CONTROLES -->
       <div class="op1-form" style="margin-bottom:24px">
-        <div class="op1-form-title">Definir rangos de m²</div>
-        <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px">
-          Los rangos se calculan automáticamente desde el muestreo. Podés ajustarlos manualmente.
-        </div>
-        <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap">
-          <div class="form-field" style="flex:0 0 140px">
+        <div class="op1-form-title">Configurar línea de precios</div>
+        <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:8px">
+          <div class="form-field" style="flex:0 0 160px">
             <label>Tamaño de rango (USD/m²)</label>
-            <input type="number" id="lp-rango-size" value="100" min="50" max="500" step="50"
+            <input type="number" id="lp-rango-size" value="100" min="25" max="500" step="25"
               onchange="calcularRangos()">
           </div>
-          <div class="form-field" style="flex:0 0 140px">
+          <div class="form-field" style="flex:0 0 180px">
+            <label>V/m² techo zona de prueba (USD)</label>
+            <input type="number" id="lp-vm2-ref" placeholder="Auto" step="25"
+              oninput="calcularRangos()">
+          </div>
+          <div class="form-field" style="flex:0 0 160px">
             <label>Sup. cubierta propiedad (m²)</label>
             <input type="number" id="lp-sup" placeholder="40" onchange="calcularRangos()">
           </div>
-          <button class="btn-agregar" onclick="calcularRangos()" style="margin-top:18px">Calcular →</button>
+        </div>
+        <div style="font-size:11px;color:var(--gris-texto);margin-bottom:20px">
+          El V/m² se calcula automáticamente desde la ponderación. Podés editarlo a mano — el resto de la línea se recalcula.
         </div>
 
         <!-- TABLA DE RANGOS -->
         <div style="overflow-x:auto">
-          <table id="lp-table" style="min-width:600px;border-collapse:collapse">
+          <table id="lp-table" style="min-width:500px;border-collapse:collapse;width:100%">
             <thead>
               <tr>
-                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:left;font-size:10px;letter-spacing:1px">Desde (USD/m²)</th>
-                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:left;font-size:10px;letter-spacing:1px">Hasta (USD/m²)</th>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">V/m² (USD)</th>
                 <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Cant. unidades</th>
+                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Días pub. promedio</th>
                 <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Zona</th>
-                <th style="background:var(--verde);color:white;padding:10px 16px;text-align:center;font-size:10px;letter-spacing:1px">Valor total propiedad</th>
               </tr>
             </thead>
             <tbody id="lp-tbody"></tbody>
@@ -699,11 +702,11 @@
       <!-- LÍNEA VISUAL DE ZONAS -->
       <div id="lp-zonas" style="display:none;margin-bottom:24px">
         <div class="section-title" style="margin-bottom:16px">Estrategia de precio</div>
-        <div id="lp-zonas-grid" style="display:grid;gap:2px;margin-bottom:20px"></div>
+        <div id="lp-zonas-grid" style="display:flex;gap:3px;margin-bottom:20px;flex-wrap:wrap"></div>
         <div id="lp-precio-sugerido-box" style="background:var(--verde-claro);border:2px solid var(--verde);border-radius:2px;padding:20px 28px;display:inline-block">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:6px">Precio sugerido de publicación</div>
           <div id="lp-precio-sugerido" style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--verde)">—</div>
-          <div id="lp-precio-rango" style="font-size:11px;color:var(--gris-texto);margin-top:4px">Zona de prueba</div>
+          <div id="lp-precio-rango" style="font-size:11px;color:var(--gris-texto);margin-top:4px">Techo zona de prueba</div>
         </div>
         <div class="form-actions" style="margin-top:20px">
           <button class="btn-agregar" onclick="guardarLineaPrecios()">Guardar línea de precios</button>
@@ -1371,6 +1374,21 @@
     document.getElementById('resultado-section').style.display = 'block';
   };
 
+  // Extraer valores de factores de la tabla de ponderación
+  const _extraerFactores = () => {
+    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
+    const factoresGuardados = [];
+    comps.forEach((c, ci) => {
+      const row = {};
+      FACTORES.forEach((f, fi) => {
+        const input = document.getElementById(`pond-${fi}-${ci}`);
+        row[f] = input ? parseFloat(input.value) || 1 : 1;
+      });
+      factoresGuardados.push({ id: c.id, factores: row });
+    });
+    return factoresGuardados;
+  };
+
   // GUARDAR RESULTADO
   window.guardarResultado = async () => {
     const vm2Hom = document.getElementById('res-vm2-hom').textContent;
@@ -1380,6 +1398,7 @@
       vm2Homogeneizado: vm2Hom,
       valorTasacion: valorFinal,
       comparablesSeleccionados: window._seleccionados,
+      factoresPonderacion: _extraerFactores(),
       estado: 'En proceso'
     });
     const ind = document.getElementById('saving-indicator-2');
@@ -1400,6 +1419,7 @@
       vm2Homogeneizado: vm2Hom,
       valorTasacion: valorFinal,
       comparablesSeleccionados: window._seleccionados,
+      factoresPonderacion: _extraerFactores(),
       estado: 'En proceso'
     });
     showLineaPrecios();
@@ -1443,75 +1463,94 @@
     const rangoSize = parseInt(document.getElementById('lp-rango-size').value) || 100;
     const sup = parseFloat(document.getElementById('lp-sup').value) || 0;
 
-    // Calcular min y max de vm2
-    const vm2s = ants.map(a => a.vm2).filter(v => v > 0);
-    const minVm2 = Math.floor(Math.min(...vm2s) / rangoSize) * rangoSize;
-    const maxVm2 = Math.ceil(Math.max(...vm2s) / rangoSize) * rangoSize;
-
-    // Armar rangos
-    const rangos = [];
-    for (let desde = minVm2; desde < maxVm2; desde += rangoSize) {
-      const hasta = desde + rangoSize;
-      const cant = ants.filter(a => a.vm2 >= desde && a.vm2 < hasta).length;
-      rangos.push({ desde, hasta, cant });
+    // V/m² de referencia: manual si fue editado, sino desde la ponderación
+    let vm2RefInput = parseFloat(document.getElementById('lp-vm2-ref').value);
+    if (!vm2RefInput || isNaN(vm2RefInput)) {
+      // Tomar del resultado de ponderación
+      const hom = document.getElementById('res-vm2-hom')?.textContent || '';
+      const num = parseInt(hom.replace(/[^0-9]/g, ''));
+      if (num > 0) {
+        vm2RefInput = Math.round(num / rangoSize) * rangoSize; // redondear al rango
+        document.getElementById('lp-vm2-ref').value = vm2RefInput;
+      } else {
+        // Fallback: usar promedio del muestreo
+        const vm2s = ants.map(a => a.vm2).filter(v => v > 0);
+        vm2RefInput = Math.round((vm2s.reduce((s,v)=>s+v,0)/vm2s.length) / rangoSize) * rangoSize;
+        document.getElementById('lp-vm2-ref').value = vm2RefInput;
+      }
     }
 
-    // Determinar zonas automáticamente
-    // Zona venta = rangos con menor vm2 (menor demanda)
-    // Zona prueba = rangos con mayor concentración
-    // Zona no venta = rangos con mayor vm2
-    const maxCant = Math.max(...rangos.map(r => r.cant));
-    const tercio = Math.floor(rangos.length / 3);
+    // Estructura fija: 2 venta (arriba) + 2 prueba + 3 no venta (abajo)
+    // vm2RefInput es el TECHO de la zona de prueba
+    // Prueba: [ref - rangoSize, ref]  y  [ref - 2*rangoSize, ref - rangoSize]  → de mayor a menor
+    // Venta: [ref + rangoSize, ref + 2*rangoSize]  y  [ref + 2*rangoSize, ref + 3*rangoSize]
+    // No venta: [ref - 3*rangoSize, ref - 2*rangoSize] ...
+    const R = rangoSize;
+    const REF = vm2RefInput;
+
+    const filas = [
+      // Zona venta — de mayor a menor en display (más arriba = más caro)
+      { vm2: REF + 2*R, zona: 'venta' },
+      { vm2: REF + R,   zona: 'venta' },
+      // Zona prueba
+      { vm2: REF,       zona: 'prueba' },
+      { vm2: REF - R,   zona: 'prueba' },
+      // Zona no venta
+      { vm2: REF - 2*R, zona: 'noventa' },
+      { vm2: REF - 3*R, zona: 'noventa' },
+      { vm2: REF - 4*R, zona: 'noventa' },
+    ];
+
+    // Para cada fila calcular cant. antecedentes y días promedio en ese rango
+    filas.forEach(f => {
+      const enRango = ants.filter(a => a.vm2 >= (f.vm2 - R) && a.vm2 < f.vm2);
+      f.cant = enRango.length;
+      const diasValidos = enRango.map(a => parseInt(a.diasPublicado) || 0).filter(d => d > 0);
+      f.diasProm = diasValidos.length > 0 ? Math.round(diasValidos.reduce((s,d)=>s+d,0)/diasValidos.length) : null;
+    });
 
     // Render tabla
+    const colores = {
+      venta:   { bg: '#DFF2EA', texto: '#2D7D46', label: '🟢 Zona de venta' },
+      prueba:  { bg: '#FFF3DC', texto: '#B7770D', label: '🟡 Zona de prueba' },
+      noventa: { bg: '#FDECEA', texto: '#C0392B', label: '🔴 No venta' }
+    };
+
     const tbody = document.getElementById('lp-tbody');
-    tbody.innerHTML = rangos.map((r, i) => {
-      let zona = '', zonaColor = '', bgColor = '';
-      if (i < tercio) {
-        zona = 'Zona de venta'; zonaColor = '#2D7D46'; bgColor = '#DFF2EA';
-      } else if (i < tercio * 2) {
-        zona = 'Zona de prueba'; zonaColor = '#B7770D'; bgColor = '#FFF3DC';
-      } else {
-        zona = 'Zona de no venta'; zonaColor = '#C0392B'; bgColor = '#FDECEA';
-      }
-      const valorTotal = sup > 0 ? `USD ${Math.round(r.desde * sup).toLocaleString('es-AR')} – USD ${Math.round(r.hasta * sup).toLocaleString('es-AR')}` : '—';
-      return `<tr style="background:${r.cant > 0 ? bgColor : 'white'}">
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${r.desde.toLocaleString('es-AR')}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${r.hasta.toLocaleString('es-AR')}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${r.cant}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;color:${zonaColor};font-weight:600;font-size:11px">${zona}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px">${valorTotal}</td>
+    tbody.innerHTML = filas.map(f => {
+      const c = colores[f.zona];
+      const diasStr = f.diasProm !== null ? `${f.diasProm} días` : '—';
+      return `<tr style="background:${c.bg}">
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600;font-size:14px">USD ${f.vm2.toLocaleString('es-AR')}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${f.cant}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px;color:var(--gris-texto)">${diasStr}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;color:${c.texto};font-weight:600;font-size:11px;letter-spacing:0.5px">${c.label}</td>
       </tr>`;
     }).join('');
 
-    // Render zonas visuales
-    if (sup > 0 && rangos.length > 0) {
-      const zonaGrid = document.getElementById('lp-zonas-grid');
-      zonaGrid.style.gridTemplateColumns = `repeat(${rangos.length}, 1fr)`;
-      zonaGrid.innerHTML = rangos.map((r, i) => {
-        let bg = '';
-        if (i < tercio) bg = '#2D5A45';
-        else if (i < tercio * 2) bg = '#E8A020';
-        else bg = '#C0392B';
-        const valorMid = Math.round(((r.desde + r.hasta) / 2) * sup);
-        return `<div style="background:${bg};color:white;padding:10px 6px;text-align:center;border-radius:2px">
-          <div style="font-size:9px;opacity:0.8;margin-bottom:4px">USD ${r.desde}–${r.hasta}/m²</div>
-          <div style="font-size:11px;font-weight:600">USD ${valorMid.toLocaleString('es-AR')}</div>
-        </div>`;
-      }).join('');
+    // Render visual de zonas
+    const zonaGrid = document.getElementById('lp-zonas-grid');
+    zonaGrid.innerHTML = filas.map(f => {
+      const bgMap = { venta: '#2D5A45', prueba: '#E8A020', noventa: '#C0392B' };
+      const bg = bgMap[f.zona];
+      const valorTotal = sup > 0 ? `<div style="font-size:12px;font-weight:600;margin-top:4px">USD ${(f.vm2 * sup).toLocaleString('es-AR')}</div>` : '';
+      return `<div style="background:${bg};color:white;padding:12px 10px;text-align:center;border-radius:2px;min-width:90px;flex:1">
+        <div style="font-size:10px;opacity:0.8;margin-bottom:2px">USD ${f.vm2.toLocaleString('es-AR')}/m²</div>
+        ${valorTotal}
+      </div>`;
+    }).join('');
 
-      // Precio sugerido = inicio zona de prueba
-      const zonaPrueba = rangos[tercio];
-      if (zonaPrueba) {
-        const precioSug = Math.round(zonaPrueba.desde * sup);
-        document.getElementById('lp-precio-sugerido').textContent = `USD ${precioSug.toLocaleString('es-AR')}`;
-        document.getElementById('lp-precio-rango').textContent =
-          `USD ${zonaPrueba.desde}/m² × ${sup} m² — Zona de prueba`;
-        window._precioSugeridoLP = precioSug;
-      }
-      document.getElementById('lp-zonas').style.display = 'block';
+    // Precio sugerido = techo de zona de prueba (primer fila de prueba = REF)
+    if (sup > 0) {
+      const precioSug = Math.round(REF * sup);
+      document.getElementById('lp-precio-sugerido').textContent = `USD ${precioSug.toLocaleString('es-AR')}`;
+      document.getElementById('lp-precio-rango').textContent =
+        `USD ${REF.toLocaleString('es-AR')}/m² × ${sup} m² — Techo zona de prueba`;
+      window._precioSugeridoLP = precioSug;
     }
-    window._rangos = rangos;
+    document.getElementById('lp-zonas').style.display = 'block';
+
+    window._rangos = filas;
   };
 
   window.guardarLineaPrecios = async () => {
