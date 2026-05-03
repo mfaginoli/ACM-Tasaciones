@@ -672,7 +672,7 @@
           <div class="form-field" style="flex:0 0 180px">
             <label>V/m² techo zona de prueba (USD)</label>
             <input type="number" id="lp-vm2-ref" placeholder="Auto" step="25"
-              oninput="calcularRangos()">
+              oninput="aplicarZonas()">
           </div>
           <div class="form-field" style="flex:0 0 160px">
             <label>Sup. cubierta propiedad (m²)</label>
@@ -1456,91 +1456,113 @@
     calcularRangos();
   };
 
+  // _rangosBase: rangos fijos del muestreo [ { desde, hasta, cant, diasProm } ]
+  // Solo se recalcula cuando cambia el tamaño de rango o la sup.
+  window._rangosBase = [];
+
   window.calcularRangos = () => {
     const ants = window._antecedentes;
     if (!ants.length) return;
 
     const rangoSize = parseInt(document.getElementById('lp-rango-size').value) || 100;
-    const sup = parseFloat(document.getElementById('lp-sup').value) || 0;
 
-    // V/m² de referencia: manual si fue editado, sino desde la ponderación
-    let vm2RefInput = parseFloat(document.getElementById('lp-vm2-ref').value);
-    if (!vm2RefInput || isNaN(vm2RefInput)) {
-      // Tomar del resultado de ponderación
+    // Calcular min y max reales del muestreo
+    const vm2s = ants.map(a => parseFloat(a.vm2)).filter(v => v > 0);
+    if (!vm2s.length) return;
+    const minVm2 = Math.floor(Math.min(...vm2s) / rangoSize) * rangoSize;
+    const maxVm2 = Math.ceil(Math.max(...vm2s) / rangoSize) * rangoSize;
+
+    // Armar rangos fijos del muestreo
+    window._rangosBase = [];
+    for (let desde = minVm2; desde < maxVm2; desde += rangoSize) {
+      const hasta = desde + rangoSize;
+      const enRango = ants.filter(a => parseFloat(a.vm2) >= desde && parseFloat(a.vm2) < hasta);
+      const diasValidos = enRango.map(a => parseInt(a.dias) || 0).filter(d => d > 0);
+      window._rangosBase.push({
+        desde,
+        hasta,
+        cant: enRango.length,
+        diasProm: diasValidos.length > 0 ? Math.round(diasValidos.reduce((s,d)=>s+d,0)/diasValidos.length) : null
+      });
+    }
+
+    // Auto-completar V/m2 de referencia desde la ponderacion (solo si el campo esta vacio)
+    const refInput = document.getElementById('lp-vm2-ref');
+    if (!refInput.value || refInput.value === '') {
       const hom = document.getElementById('res-vm2-hom')?.textContent || '';
       const num = parseInt(hom.replace(/[^0-9]/g, ''));
       if (num > 0) {
-        vm2RefInput = Math.round(num / rangoSize) * rangoSize; // redondear al rango
-        document.getElementById('lp-vm2-ref').value = vm2RefInput;
+        refInput.value = Math.round(num / rangoSize) * rangoSize;
       } else {
-        // Fallback: usar promedio del muestreo
-        const vm2s = ants.map(a => a.vm2).filter(v => v > 0);
-        vm2RefInput = Math.round((vm2s.reduce((s,v)=>s+v,0)/vm2s.length) / rangoSize) * rangoSize;
-        document.getElementById('lp-vm2-ref').value = vm2RefInput;
+        refInput.value = Math.round((vm2s.reduce((s,v)=>s+v,0)/vm2s.length) / rangoSize) * rangoSize;
       }
     }
 
-    // Estructura fija: 2 venta (arriba) + 2 prueba + 3 no venta (abajo)
-    // vm2RefInput es el TECHO de la zona de prueba
-    // Prueba: [ref - rangoSize, ref]  y  [ref - 2*rangoSize, ref - rangoSize]  → de mayor a menor
-    // Venta: [ref + rangoSize, ref + 2*rangoSize]  y  [ref + 2*rangoSize, ref + 3*rangoSize]
-    // No venta: [ref - 3*rangoSize, ref - 2*rangoSize] ...
-    const R = rangoSize;
-    const REF = vm2RefInput;
+    aplicarZonas();
+  };
 
-    const filas = [
-      // Zona venta — de mayor a menor en display (más arriba = más caro)
-      { vm2: REF + 2*R, zona: 'venta' },
-      { vm2: REF + R,   zona: 'venta' },
-      // Zona prueba
-      { vm2: REF,       zona: 'prueba' },
-      { vm2: REF - R,   zona: 'prueba' },
-      // Zona no venta
-      { vm2: REF - 2*R, zona: 'noventa' },
-      { vm2: REF - 3*R, zona: 'noventa' },
-      { vm2: REF - 4*R, zona: 'noventa' },
-    ];
+  // aplicarZonas: solo reposiciona colores sobre los rangos fijos del muestreo.
+  // No toca cant. ni diasProm. Se llama cuando cambia el V/m2 de referencia.
+  window.aplicarZonas = () => {
+    const rangos = window._rangosBase;
+    if (!rangos.length) return;
 
-    // Para cada fila calcular cant. antecedentes y días promedio en ese rango
-    filas.forEach(f => {
-      const enRango = ants.filter(a => a.vm2 >= (f.vm2 - R) && a.vm2 < f.vm2);
-      f.cant = enRango.length;
-      const diasValidos = enRango.map(a => parseInt(a.diasPublicado) || 0).filter(d => d > 0);
-      f.diasProm = diasValidos.length > 0 ? Math.round(diasValidos.reduce((s,d)=>s+d,0)/diasValidos.length) : null;
+    const rangoSize = parseInt(document.getElementById('lp-rango-size').value) || 100;
+    const sup = parseFloat(document.getElementById('lp-sup').value) || 0;
+    const REF = parseFloat(document.getElementById('lp-vm2-ref').value) || 0;
+    if (!REF) return;
+
+    // Asignar zona a cada rango del muestreo segun posicion relativa a REF
+    // REF es el techo de la zona de prueba → rango [REF-R, REF) es prueba alta
+    // Mayor que REF → no venta / Menor que REF-2R → venta
+    const conZona = rangos.map(r => {
+      let zona;
+      if (r.hasta <= REF - rangoSize) {
+        zona = 'venta';
+      } else if (r.hasta <= REF) {
+        zona = 'prueba';
+      } else {
+        zona = 'noventa';
+      }
+      return { ...r, zona };
     });
 
-    // Render tabla
+    // Ordenar de mayor a menor para mostrar en tabla (no venta arriba, venta abajo)
+    const ordenados = [...conZona].sort((a, b) => b.desde - a.desde);
+
     const colores = {
       venta:   { bg: '#DFF2EA', texto: '#2D7D46', label: '🟢 Zona de venta' },
       prueba:  { bg: '#FFF3DC', texto: '#B7770D', label: '🟡 Zona de prueba' },
       noventa: { bg: '#FDECEA', texto: '#C0392B', label: '🔴 No venta' }
     };
 
+    // Render tabla
     const tbody = document.getElementById('lp-tbody');
-    tbody.innerHTML = filas.map(f => {
-      const c = colores[f.zona];
-      const diasStr = f.diasProm !== null ? `${f.diasProm} días` : '—';
+    tbody.innerHTML = ordenados.map(r => {
+      const c = colores[r.zona];
+      const diasStr = r.diasProm !== null ? `${r.diasProm} días` : '—';
       return `<tr style="background:${c.bg}">
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600;font-size:14px">USD ${f.vm2.toLocaleString('es-AR')}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${f.cant}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600;font-size:14px">USD ${r.desde.toLocaleString('es-AR')}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-weight:600">${r.cant}</td>
         <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;font-size:12px;color:var(--gris-texto)">${diasStr}</td>
         <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center;color:${c.texto};font-weight:600;font-size:11px;letter-spacing:0.5px">${c.label}</td>
       </tr>`;
     }).join('');
 
-    // Render visual de zonas
+    // Render visual (de mayor a menor: no venta izq → venta der NO, mejor menor→mayor de izq a der)
+    // Mostramos de mayor a menor igual que la tabla
     const zonaGrid = document.getElementById('lp-zonas-grid');
-    zonaGrid.innerHTML = filas.map(f => {
+    zonaGrid.innerHTML = ordenados.map(r => {
       const bgMap = { venta: '#2D5A45', prueba: '#E8A020', noventa: '#C0392B' };
-      const bg = bgMap[f.zona];
-      const valorTotal = sup > 0 ? `<div style="font-size:12px;font-weight:600;margin-top:4px">USD ${(f.vm2 * sup).toLocaleString('es-AR')}</div>` : '';
-      return `<div style="background:${bg};color:white;padding:12px 10px;text-align:center;border-radius:2px;min-width:90px;flex:1">
-        <div style="font-size:10px;opacity:0.8;margin-bottom:2px">USD ${f.vm2.toLocaleString('es-AR')}/m²</div>
+      const bg = bgMap[r.zona];
+      const valorTotal = sup > 0 ? `<div style="font-size:12px;font-weight:600;margin-top:4px">USD ${(r.desde * sup).toLocaleString('es-AR')}</div>` : '';
+      return `<div style="background:${bg};color:white;padding:12px 10px;text-align:center;border-radius:2px;min-width:80px;flex:1">
+        <div style="font-size:10px;opacity:0.8;margin-bottom:2px">USD ${r.desde.toLocaleString('es-AR')}/m²</div>
         ${valorTotal}
       </div>`;
     }).join('');
 
-    // Precio sugerido = techo de zona de prueba (primer fila de prueba = REF)
+    // Precio sugerido = REF (techo zona de prueba)
     if (sup > 0) {
       const precioSug = Math.round(REF * sup);
       document.getElementById('lp-precio-sugerido').textContent = `USD ${precioSug.toLocaleString('es-AR')}`;
@@ -1549,8 +1571,7 @@
       window._precioSugeridoLP = precioSug;
     }
     document.getElementById('lp-zonas').style.display = 'block';
-
-    window._rangos = filas;
+    window._rangos = ordenados;
   };
 
   window.guardarLineaPrecios = async () => {
