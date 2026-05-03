@@ -1768,28 +1768,59 @@
     reconstruir();
   };
 
-  window.guardarRanking = async () => {
-    if (!window._currentTasacionId) return;
+  // Función interna para obtener seleccionados y ranking ordenado
+  const _getRankingData = () => {
     const selIds = window._antecedentes
       .filter(a => document.getElementById(`rank-chk-${a.id}`)?.checked)
       .map(a => Number(a.id));
+    const t = window._tasacionActual;
+    const sup = parseFloat(t?.lpSup) || parseFloat(t?.propiedad?.supPropia) || 0;
+    const precioSug = window._precioSugeridoLP || parseFloat(t?.precioSugerido) || 0;
+    const vm2Prop = sup > 0 && precioSug > 0 ? Math.round(precioSug / sup) : 0;
+    const seleccionados = window._antecedentes
+      .filter(a => selIds.includes(Number(a.id)))
+      .sort((a, b) => a.vm2 - b.vm2);
+    const propRow = {
+      _esPropiedad: true,
+      direccion: (t?.direccion || '') + (t?.barrio ? ', ' + t.barrio : ''),
+      precio: precioSug,
+      supCub: sup,
+      dias: null,
+      vm2: vm2Prop
+    };
+    const rankingFinal = [...seleccionados, propRow].sort((a, b) => a.vm2 - b.vm2);
+    return { selIds, rankingFinal };
+  };
+
+  window.guardarRanking = async () => {
+    if (!window._currentTasacionId) return;
+    const { selIds, rankingFinal } = _getRankingData();
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
       rankingSeleccionados: selIds,
+      rankingFinal,
       estado: 'En proceso'
     });
-    const ind = document.getElementById('saving-indicator-ranking');
-    if (ind) { ind.style.display = 'inline'; setTimeout(() => ind.style.display = 'none', 2000); }
+    const btn = document.querySelector('button[onclick="guardarRanking()"]');
+    if (btn) {
+      const orig = btn.textContent;
+      btn.textContent = '✓ Guardado';
+      setTimeout(() => btn.textContent = orig, 2000);
+    }
   };
 
   window.finalizarTasacion = async () => {
     if (!window._currentTasacionId) return;
+    const { selIds, rankingFinal } = _getRankingData();
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
+      rankingSeleccionados: selIds,
+      rankingFinal,
       estado: 'Completada'
     });
     window._currentTasacionId = null;
     window._tasacionActual = null;
+    window._precioSugeridoLP = null;
     showDashboard();
   };
 
