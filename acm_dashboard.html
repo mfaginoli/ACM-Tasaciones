@@ -733,29 +733,21 @@
       </div>
 
       <div style="font-size:13px;color:var(--gris-texto);margin-bottom:20px;background:var(--blanco);border:1px solid var(--gris-borde);border-radius:2px;padding:16px 20px;">
-        Seleccioná los antecedentes que querés incluir en el ranking. La propiedad tasada se inserta en la posición que corresponde según el precio sugerido.
+        Seleccioná los comparables a incluir en el ranking. La propiedad tasada se inserta en la posición correspondiente según el precio sugerido.
       </div>
 
-      <!-- Selector de antecedentes para ranking -->
-      <div class="op1-form" style="margin-bottom:20px">
-        <div class="op1-form-title">Seleccionar antecedentes para el ranking</div>
-        <div id="ranking-selector" style="display:flex;flex-wrap:wrap;gap:8px;margin-top:12px"></div>
-        <div style="margin-top:12px">
-          <button class="btn-agregar" onclick="renderRanking()" style="padding:8px 18px;font-size:11px">Actualizar ranking →</button>
-        </div>
-      </div>
+      <div id="ranking-selector" style="display:none"></div>
 
       <div class="table-wrap">
         <table>
           <thead>
             <tr>
-              <th>Pos.</th>
+              <th style="width:40px;text-align:center">✓</th>
               <th>Dirección</th>
               <th>Precio</th>
               <th>Sup. Cub.</th>
               <th>Días pub.</th>
               <th>V/m²</th>
-              <th>Tipo</th>
             </tr>
           </thead>
           <tbody id="ranking-tbody"></tbody>
@@ -1665,75 +1657,122 @@
     document.getElementById('ranking-tasacion-info').textContent =
       document.getElementById('op1-tasacion-info').textContent;
 
-    // Armar checkboxes de selección — por defecto todos tildados
+    // Renderizar tabla con checkboxes integrados
     const t = window._tasacionActual;
-    const selGuardados = t?.rankingSeleccionados || null;
-    const selector = document.getElementById('ranking-selector');
-    selector.innerHTML = window._antecedentes.map(a => {
-      const checked = selGuardados ? selGuardados.includes(a.id) : true;
-      return `<label style="display:flex;align-items:center;gap:6px;background:var(--blanco);border:1px solid var(--gris-borde);border-radius:2px;padding:6px 12px;cursor:pointer;font-size:12px">
-        <input type="checkbox" id="rank-chk-${a.id}" value="${a.id}" ${checked ? 'checked' : ''}>
-        ${a.direccion} — USD ${Number(a.vm2||0).toLocaleString('es-AR')}/m²
-      </label>`;
-    }).join('');
-
+    window._rankingSelGuardados = t?.rankingSeleccionados || null;
     renderRanking();
   };
 
   window.renderRanking = () => {
-    // Solo los antecedentes tildados
-    const checkboxes = document.querySelectorAll('#ranking-selector input[type=checkbox]:checked');
-    const selIds = Array.from(checkboxes).map(c => c.value);
-    const selIdsNum = selIds.map(id => Number(id));
-    const ants = window._antecedentes.filter(a => selIdsNum.includes(Number(a.id)));
     const t = window._tasacionActual;
+    const selGuardados = window._rankingSelGuardados;
     const lpSup = document.getElementById('lp-sup');
     const sup = (lpSup ? parseFloat(lpSup.value) : 0) || parseFloat(t?.propiedad?.supPropia) || 0;
     const precioSug = window._precioSugeridoLP || parseFloat(t?.precioSugerido) || 0;
     const vm2Propiedad = sup > 0 && precioSug > 0 ? Math.round(precioSug / sup) : null;
 
-    // Ordenar antecedentes por vm2 de menor a mayor
-    ants.sort((a, b) => a.vm2 - b.vm2);
-
-    // Insertar propiedad en posición correcta
     const propRow = {
       _esPropiedad: true,
-      direccion: t?.direccion + ', ' + t?.barrio || 'Propiedad tasada',
+      direccion: (t?.direccion || '') + (t?.barrio ? ', ' + t.barrio : ''),
       precio: precioSug,
       supCub: sup,
       dias: '—',
       vm2: vm2Propiedad || 0,
     };
 
-    // Crear lista combinada ordenada
-    const combined = [...ants, propRow].sort((a, b) => a.vm2 - b.vm2);
-
     const tbody = document.getElementById('ranking-tbody');
-    tbody.innerHTML = combined.map((item, i) => {
-      const esPropiedad = item._esPropiedad;
-      const bg = esPropiedad ? 'background:var(--verde);color:white' : '';
-      const textColor = esPropiedad ? 'color:white' : '';
-      const vm2Color = esPropiedad ? 'color:white;font-weight:700' : 'color:var(--verde);font-weight:600';
-      const tipo = esPropiedad
-        ? `<span style="background:rgba(255,255,255,0.2);color:white;padding:3px 8px;border-radius:10px;font-size:10px;font-weight:600">★ PROPIEDAD TASADA</span>`
-        : `<span class="badge badge-dpto">Antecedente</span>`;
 
-      return `<tr style="${bg}">
-        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);font-weight:700;${textColor}">${i+1}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">${item.direccion||'—'}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">USD ${Number(item.precio||0).toLocaleString('es-AR')}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">${item.supCub||'—'} m²</td>
-        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${textColor}">${item.dias||'—'}</td>
-        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro);${vm2Color}">USD ${Number(item.vm2||0).toLocaleString('es-AR')}/m²</td>
-        <td style="padding:12px 16px;border-bottom:1px solid var(--gris-claro)">${tipo}</td>
+    // Primero renderizar todos los antecedentes con checkbox
+    // Luego al cambiar un checkbox, reconstruir solo la parte de la propiedad posicionada
+    const ants = window._antecedentes;
+    tbody.innerHTML = '';
+
+    // Filas de antecedentes con checkbox
+    const antRows = ants.map(a => {
+      const checked = selGuardados ? selGuardados.includes(Number(a.id)) : true;
+      return { ant: a, checked };
+    });
+
+    const reconstruir = () => {
+      const seleccionados = antRows
+        .filter(r => document.getElementById(`rank-chk-${r.ant.id}`)?.checked)
+        .map(r => r.ant)
+        .sort((a, b) => a.vm2 - b.vm2);
+
+      const combined = [...seleccionados, propRow].sort((a, b) => a.vm2 - b.vm2);
+      let pos = 1;
+      tbody.innerHTML = antRows.map(r => {
+        const a = r.ant;
+        const checked = document.getElementById(`rank-chk-${a.id}`)?.checked ?? r.checked;
+        return `<tr id="rank-row-${a.id}" style="${checked ? '' : 'opacity:0.4'}">
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center">
+            <input type="checkbox" id="rank-chk-${a.id}" ${checked ? 'checked' : ''}
+              onchange="window._reconstruirRanking()">
+          </td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${a.direccion||'—'}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${Number(a.precio||0).toLocaleString('es-AR')}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${a.supCub||'—'} m²</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${a.dias||'—'}</td>
+          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);color:var(--verde);font-weight:600">USD ${Number(a.vm2||0).toLocaleString('es-AR')}/m²</td>
+        </tr>`;
+      }).join('') +
+      // Fila propiedad intercalada visualmente abajo — se muestra el posicionamiento en un bloque separado
+      `<tr style="background:var(--verde);color:white">
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center">★</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);font-weight:600">${propRow.direccion}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${Number(propRow.precio||0).toLocaleString('es-AR')}</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${propRow.supCub} m²</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">—</td>
+        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);font-weight:700">USD ${Number(propRow.vm2||0).toLocaleString('es-AR')}/m²</td>
       </tr>`;
-    }).join('');
+
+      // Reordenar filas por vm2 incluyendo propiedad
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const vm2Map = {};
+      ants.forEach(a => vm2Map[`rank-row-${a.id}`] = a.vm2);
+      // Ordenar: prop fila al lugar correcto
+      const sorted = [...seleccionados, propRow].sort((a,b) => a.vm2 - b.vm2);
+      // Rearmar tbody ordenado
+      const orderedRows = [];
+      let pi = 0;
+      sorted.forEach((item, idx) => {
+        if (item._esPropiedad) {
+          // fila verde
+          const propTr = tbody.querySelector('tr[style*="var(--verde)"]');
+          if (propTr) orderedRows.push(propTr.cloneNode(true));
+        } else {
+          const tr = document.getElementById(`rank-row-${item.id}`);
+          if (tr) orderedRows.push(tr.cloneNode(true));
+        }
+      });
+      // Agregar los no seleccionados al final
+      ants.filter(a => !seleccionados.find(s => s.id === a.id)).forEach(a => {
+        const tr = document.getElementById(`rank-row-${a.id}`);
+        if (tr) orderedRows.push(tr.cloneNode(true));
+      });
+      tbody.innerHTML = '';
+      orderedRows.forEach((tr, i) => {
+        // Actualizar posición
+        const firstTd = tr.querySelector('td:first-child');
+        if (firstTd && !firstTd.innerHTML.includes('★') && !firstTd.querySelector('input')) {
+          firstTd.textContent = i + 1;
+        }
+        tbody.appendChild(tr);
+        // Re-attach evento
+        const chk = tr.querySelector('input[type=checkbox]');
+        if (chk) chk.onchange = window._reconstruirRanking;
+      });
+    };
+
+    window._reconstruirRanking = reconstruir;
+    reconstruir();
   };
 
   window.guardarRanking = async () => {
     if (!window._currentTasacionId) return;
-    const checkboxes = document.querySelectorAll('#ranking-selector input[type=checkbox]:checked');
-    const selIds = Array.from(checkboxes).map(c => Number(c.value));
+    const selIds = window._antecedentes
+      .filter(a => document.getElementById(`rank-chk-${a.id}`)?.checked)
+      .map(a => Number(a.id));
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
       rankingSeleccionados: selIds,
