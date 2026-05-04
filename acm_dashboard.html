@@ -756,8 +756,9 @@
       </div>
       <div class="form-actions" style="margin-top:20px">
         <button class="btn-agregar" onclick="guardarRanking()">Guardar ranking</button>
-        <button class="btn-op2" onclick="generarPDF()" style="margin:0;background:#3D7A5E">Generar PDF ↓</button>
         <button class="btn-op2" onclick="finalizarTasacion()" style="margin:0;background:#2D5A45">Finalizar tasación ✓</button>
+        <button class="btn-op2" onclick="generarPDF()" style="margin:0;background:#3D7A5E">Generar PDF ↓</button>
+        <button class="btn-op2" onclick="irAlDashboard()" style="margin:0;background:#666">← Ir al Dashboard</button>
       </div>
     </div>
 
@@ -918,7 +919,16 @@
         const badgeTipo = { dpto:'badge-dpto', casa_sin:'badge-casa', casa_con:'badge-casa', lote:'badge-lote' }[t.tipo] || '';
         const badgeEst = t.estado === 'Completada' ? 'badge-completo' : 'badge-proceso';
         const fecha = t.fecha || '—';
-        const precio = t.precioSugerido ? `USD ${Number(t.precioSugerido).toLocaleString('es-AR')}` : '—';
+        // precioSugerido puede ser número o string con "USD ..."
+        let precioNum = 0;
+        if (t.precioSugerido) {
+          const raw = String(t.precioSugerido).replace(/[^0-9.]/g,'');
+          precioNum = parseFloat(raw) || 0;
+        }
+        if (!precioNum && t.lpVm2Ref && t.lpSup) {
+          precioNum = Math.round(parseFloat(t.lpVm2Ref) * parseFloat(t.lpSup));
+        }
+        const precio = precioNum > 0 ? `USD ${precioNum.toLocaleString('es-AR')}` : '—';
         return `<tr>
           <td><strong>${t.cliente}</strong></td>
           <td>${t.direccion}, ${t.barrio}</td>
@@ -1823,6 +1833,11 @@
       rankingFinal,
       estado: 'Completada'
     });
+    const btn = document.querySelector('button[onclick="finalizarTasacion()"]');
+    if (btn) { btn.textContent = '✓ Tasación finalizada'; setTimeout(() => btn.textContent = 'Finalizar tasación ✓', 2500); }
+  };
+
+  window.irAlDashboard = () => {
     window._currentTasacionId = null;
     window._tasacionActual = null;
     window._precioSugeridoLP = null;
