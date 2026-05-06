@@ -1195,6 +1195,12 @@
   if (fechaInput) fechaInput.value = hoy.toISOString().split('T')[0];
 
   // CARGAR TASACIONES
+  window.eliminarTasacion = async (id, nombre) => {
+    if (!confirm(`¿Eliminar la tasación "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
+    await deleteDoc(doc(db, 'tasaciones', id));
+    cargarTasaciones();
+  };
+
   window.cargarTasaciones = async () => {
     try {
       const snap = await getDocs(collection(db, 'tasaciones'));
@@ -1245,6 +1251,7 @@
           <td style="display:flex;gap:6px;align-items:center">
             ${t.estado === 'Completada' ? `<button class="btn-ver" style="background:var(--verde-medio);color:white;border:none" onclick="generarPDFDesdeDashboard('${t.id}')">PDF ↓</button>` : ''}
             <button class="btn-ver" onclick="abrirTasacion('${t.id}')">Abrir →</button>
+            <button class="btn-del" onclick="eliminarTasacion('${t.id}','${t.cliente} · ${t.direccion}')" title="Eliminar tasación" style="font-size:14px;padding:4px 8px">🗑</button>
           </td>
         </tr>`;
       }).join('');
@@ -1591,10 +1598,7 @@
     }
   };
 
-  window.showOp1 = () => {
-    document.getElementById('op2-screen').style.display = 'none';
-    document.getElementById('op1-screen').style.display = 'block';
-  };
+  // showOp1 definida más abajo
 
   // CALCULAR SUP HOMOGENEIZADA (cubierta 100% + balcón 30%)
   window.calcularSupHom = () => {
