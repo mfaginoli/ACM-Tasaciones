@@ -1132,7 +1132,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, arrayUnion, query, where, orderBy, serverTimestamp }
+  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, arrayUnion, query, where, orderBy, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -2174,11 +2174,13 @@
   window.guardarRanking = async () => {
     if (!window._currentTasacionId) return;
     const { selIds, rankingFinal } = _getRankingData();
+    // Respetar estado existente — no pisar Completada con En proceso
+    const estadoActual = window._tasacionActual?.estado || 'En proceso';
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
       rankingSeleccionados: selIds,
       rankingFinal,
-      estado: 'En proceso'
+      estado: estadoActual
     });
     const btn = document.querySelector('button[onclick="guardarRanking()"]');
     if (btn) {
