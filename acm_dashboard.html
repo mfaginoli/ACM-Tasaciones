@@ -1799,7 +1799,7 @@
       valorTasacion: valorFinal,
       comparablesSeleccionados: window._seleccionados,
       factoresPonderacion: _extraerFactores(),
-      estado: 'En proceso'
+      estado: window._tasacionActual?.estado === 'Completada' ? 'Completada' : 'En proceso'
     });
     const ind = document.getElementById('saving-indicator-2');
     ind.style.display = 'inline';
@@ -1820,7 +1820,7 @@
       valorTasacion: valorFinal,
       comparablesSeleccionados: window._seleccionados,
       factoresPonderacion: _extraerFactores(),
-      estado: 'En proceso'
+      estado: window._tasacionActual?.estado === 'Completada' ? 'Completada' : 'En proceso'
     });
     showLineaPrecios();
   };
@@ -2149,9 +2149,20 @@
 
   // Función interna para obtener seleccionados y ranking ordenado
   const _getRankingData = () => {
-    const selIds = window._antecedentes
-      .filter(a => document.getElementById(`rank-chk-${a.id}`)?.checked)
-      .map(a => Number(a.id));
+    // Leer checkboxes del DOM si están disponibles, sino usar los guardados
+    const chksEnDOM = document.querySelectorAll('#ranking-tbody input[type=checkbox]');
+    let selIds;
+    if (chksEnDOM.length > 0) {
+      selIds = window._antecedentes
+        .filter(a => document.getElementById(`rank-chk-${a.id}`)?.checked)
+        .map(a => Number(a.id));
+    } else {
+      // Fallback: usar los guardados en Firebase o todos si no hay guardados
+      const guardados = window._tasacionActual?.rankingSeleccionados;
+      selIds = guardados && guardados.length > 0
+        ? guardados.map(Number)
+        : window._antecedentes.map(a => Number(a.id));
+    }
     const t = window._tasacionActual;
     const sup = parseFloat(t?.lpSup) || parseFloat(t?.propiedad?.supPropia) || 0;
     const precioSug = window._precioSugeridoLP || parseFloat(t?.precioSugerido) || 0;
@@ -3352,7 +3363,7 @@
       cc_valRH:     window._cc_valRH||0,
       cc_valProm:   window._cc_valProm||0,
       precioSugerido: precioSug,
-      estado: 'En proceso'
+      estado: window._tasacionActual?.estado === 'Completada' ? 'Completada' : 'En proceso'
     });
     const btn = document.querySelector('button[onclick="guardarCC()"]');
     if (btn) { btn.textContent='✓ Guardado'; setTimeout(()=>btn.textContent='Guardar valoración',2000); }
