@@ -548,6 +548,32 @@
           </tbody>
         </table>
       </div>
+
+      <!-- RECUADRO PROMEDIOS -->
+      <div id="ant-promedios" style="display:none;margin-top:16px;background:#F5F5F3;border:1px solid var(--gris-borde);border-radius:2px;padding:16px 20px;">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:12px;font-weight:500;">Resumen estadístico del muestreo</div>
+        <div id="ant-promedios-grid" style="display:flex;flex-wrap:wrap;gap:16px;"></div>
+      </div>
+
+      <!-- TABLA ORDENADA POR VM2 -->
+      <div style="margin-top:20px;display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;">
+        <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);font-weight:500;">Antecedentes ordenados por V/m² (menor a mayor)</div>
+        <button class="btn-agregar" onclick="renderAntOrdenados()" style="padding:7px 16px;font-size:11px;">Ordenar por V/m² ↑</button>
+      </div>
+      <div id="ant-ordenados-wrap" style="display:none">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Viz.</th>
+                <th>Precio (USD)</th><th>Sup.Cub.</th><th>Ant.</th><th>Dorm.</th>
+                <th>Disp.</th><th>Estado</th><th>V/m²</th>
+              </tr>
+            </thead>
+            <tbody id="ant-tbody-ordenado"></tbody>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- OPERATIVO 2 -->
@@ -1155,8 +1181,9 @@
       return;
     }
 
-    tbody.innerHTML = window._antecedentes.map((a, i) => `
-      <tr>
+    tbody.innerHTML = window._antecedentes.map((a, i) => {
+      const bg = i % 2 === 0 ? '' : 'background:#F7F7F5';
+      return `<tr style="${bg}">
         <td>${i+1}</td>
         <td>${a.barrio||'—'}</td>
         <td>${a.direccion||'—'}</td>
@@ -1181,8 +1208,55 @@
           <button class="btn-del" onclick="editarAnt(${a.id})" title="Editar" style="color:var(--gris-texto);margin-right:4px">✏️</button>
           <button class="btn-del" onclick="eliminarAnt(${a.id})" title="Eliminar">✕</button>
         </td>
-      </tr>
-    `).join('');
+      </tr>`;
+    }).join('');
+
+    // Promedios
+    const ants = window._antecedentes;
+    const prom = arr => arr.length ? Math.round(arr.reduce((s,v)=>s+v,0)/arr.length) : null;
+    const stats = [
+      { label: 'Precio promedio',           val: prom(ants.map(a=>a.precio).filter(Boolean)),              fmt: v => `USD ${v.toLocaleString('es-AR')}` },
+      { label: 'V/m² promedio',             val: prom(ants.map(a=>a.vm2).filter(Boolean)),                 fmt: v => `USD ${v.toLocaleString('es-AR')}` },
+      { label: 'Días pub. promedio',        val: prom(ants.map(a=>parseInt(a.dias)).filter(v=>v>0)),       fmt: v => `${v} días` },
+      { label: 'Visualizaciones promedio',  val: prom(ants.map(a=>parseInt(a.viz)).filter(v=>v>0)),        fmt: v => v.toLocaleString('es-AR') },
+      { label: 'Antigüedad promedio',       val: prom(ants.map(a=>parseInt(a.ant)).filter(v=>v>=0)),       fmt: v => `${v} años` },
+      { label: 'Sup. cubierta promedio',    val: prom(ants.map(a=>parseFloat(a.supCub)).filter(v=>v>0)),   fmt: v => `${v} m²` },
+    ];
+    const grid = document.getElementById('ant-promedios-grid');
+    if (grid) {
+      grid.innerHTML = stats.map(s => s.val !== null ? `
+        <div style="background:white;border:1px solid var(--gris-borde);border-radius:2px;padding:10px 16px;min-width:140px;">
+          <div style="font-size:9px;letter-spacing:1px;color:var(--gris-texto);text-transform:uppercase;margin-bottom:4px;">${s.label}</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--verde);">${s.fmt(s.val)}</div>
+        </div>` : ''
+      ).join('');
+      document.getElementById('ant-promedios').style.display = ants.length > 0 ? 'block' : 'none';
+    }
+
+  window.renderAntOrdenados = () => {
+    const sorted = [...window._antecedentes].sort((a,b) => a.vm2 - b.vm2);
+    const wrap = document.getElementById('ant-ordenados-wrap');
+    const tbody2 = document.getElementById('ant-tbody-ordenado');
+    if (!wrap || !tbody2) return;
+    tbody2.innerHTML = sorted.map((a, i) => {
+      const bg = i % 2 === 0 ? '' : 'background:#F7F7F5';
+      return `<tr style="${bg}">
+        <td style="font-weight:700;color:var(--verde)">${i+1}</td>
+        <td>${a.barrio||'—'}</td>
+        <td>${a.direccion||'—'}</td>
+        <td>${a.dias||'—'}</td>
+        <td>${a.viz||'—'}</td>
+        <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
+        <td>${a.supCub} m²</td>
+        <td>${a.ant != null ? (a.ant === 0 ? 'A estrenar' : a.ant+' años') : '—'}</td>
+        <td>${a.dorm||'—'}</td>
+        <td>${a.planta||'—'}</td>
+        <td>${a.estado||'—'}</td>
+        <td style="font-weight:700;color:var(--verde)">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
+      </tr>`;
+    }).join('');
+    wrap.style.display = 'block';
+  };
   };
 
   // LIMPIAR FORM
@@ -1709,73 +1783,69 @@
     });
 
     const reconstruir = () => {
+      // Seleccionados tildados, ordenados por vm2
       const seleccionados = antRows
         .filter(r => document.getElementById(`rank-chk-${r.ant.id}`)?.checked)
         .map(r => r.ant)
-        .sort((a, b) => a.vm2 - b.vm2);
+        .sort((a, b) => (parseFloat(a.vm2)||0) - (parseFloat(b.vm2)||0));
 
-      const combined = [...seleccionados, propRow].sort((a, b) => a.vm2 - b.vm2);
+      // Combinar seleccionados + propiedad, ordenar por vm2
+      const combined = [...seleccionados, propRow].sort((a, b) =>
+        (parseFloat(a.vm2)||0) - (parseFloat(b.vm2)||0)
+      );
+
+      // No seleccionados van al final
+      const noSel = antRows
+        .filter(r => !document.getElementById(`rank-chk-${r.ant.id}`)?.checked)
+        .map(r => r.ant);
+
+      const tdStyle = `padding:10px 16px;border-bottom:1px solid var(--gris-claro)`;
       let pos = 1;
-      tbody.innerHTML = antRows.map(r => {
-        const a = r.ant;
-        const checked = document.getElementById(`rank-chk-${a.id}`)?.checked ?? r.checked;
-        return `<tr id="rank-row-${a.id}" style="${checked ? '' : 'opacity:0.4'}">
-          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center">
-            <input type="checkbox" id="rank-chk-${a.id}" ${checked ? 'checked' : ''}
+
+      // Renderizar: primero los ordenados (seleccionados + prop), luego no seleccionados
+      tbody.innerHTML = combined.map(item => {
+        if (item._esPropiedad) {
+          return `<tr style="background:var(--verde);">
+            <td style="${tdStyle};text-align:center;color:white;font-weight:700">${pos++}</td>
+            <td style="${tdStyle};color:white;font-weight:700">★ ${item.direccion} <span style="font-size:9px;background:rgba(255,255,255,0.2);padding:2px 6px;border-radius:8px;margin-left:6px;">A TASAR</span></td>
+            <td style="${tdStyle};color:white">USD ${Number(item.precio||0).toLocaleString('es-AR')}</td>
+            <td style="${tdStyle};color:white">${item.supCub||'—'} m²</td>
+            <td style="${tdStyle};color:white">—</td>
+            <td style="${tdStyle};color:white;font-weight:700">USD ${Number(item.vm2||0).toLocaleString('es-AR')}/m²</td>
+          </tr>`;
+        }
+        const bg = pos % 2 === 0 ? 'background:#F7F7F5' : '';
+        const checked = document.getElementById(`rank-chk-${item.id}`)?.checked;
+        return `<tr id="rank-row-${item.id}" style="${bg}">
+          <td style="${tdStyle};text-align:center">
+            <input type="checkbox" id="rank-chk-${item.id}" ${checked ? 'checked' : ''}
               onchange="window._reconstruirRanking()">
           </td>
-          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${a.direccion||'—'}</td>
-          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${Number(a.precio||0).toLocaleString('es-AR')}</td>
-          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${a.supCub||'—'} m²</td>
-          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${a.dias||'—'}</td>
-          <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);color:var(--verde);font-weight:600">USD ${Number(a.vm2||0).toLocaleString('es-AR')}/m²</td>
+          <td style="${tdStyle}">${item.direccion||'—'}</td>
+          <td style="${tdStyle}">USD ${Number(item.precio||0).toLocaleString('es-AR')}</td>
+          <td style="${tdStyle}">${item.supCub||'—'} m²</td>
+          <td style="${tdStyle}">${item.dias||'—'}</td>
+          <td style="${tdStyle};color:var(--verde);font-weight:600">USD ${Number(item.vm2||0).toLocaleString('es-AR')}/m²</td>
         </tr>`;
-      }).join('') +
-      // Fila propiedad intercalada visualmente abajo — se muestra el posicionamiento en un bloque separado
-      `<tr style="background:var(--verde);color:white">
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);text-align:center">★</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);font-weight:600">${propRow.direccion}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">USD ${Number(propRow.precio||0).toLocaleString('es-AR')}</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">${propRow.supCub} m²</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro)">—</td>
-        <td style="padding:10px 16px;border-bottom:1px solid var(--gris-claro);font-weight:700">USD ${Number(propRow.vm2||0).toLocaleString('es-AR')}/m²</td>
-      </tr>`;
+        pos++;
+      }).join('') + noSel.map(a => {
+        const bg = pos % 2 === 0 ? 'background:#F7F7F5' : '';
+        return `<tr id="rank-row-${a.id}" style="${bg};opacity:0.4">
+          <td style="${tdStyle};text-align:center">
+            <input type="checkbox" id="rank-chk-${a.id}"
+              onchange="window._reconstruirRanking()">
+          </td>
+          <td style="${tdStyle}">${a.direccion||'—'}</td>
+          <td style="${tdStyle}">USD ${Number(a.precio||0).toLocaleString('es-AR')}</td>
+          <td style="${tdStyle}">${a.supCub||'—'} m²</td>
+          <td style="${tdStyle}">${a.dias||'—'}</td>
+          <td style="${tdStyle};color:var(--verde);font-weight:600">USD ${Number(a.vm2||0).toLocaleString('es-AR')}/m²</td>
+        </tr>`;
+      }).join('');
 
-      // Reordenar filas por vm2 incluyendo propiedad
-      const rows = Array.from(tbody.querySelectorAll('tr'));
-      const vm2Map = {};
-      ants.forEach(a => vm2Map[`rank-row-${a.id}`] = a.vm2);
-      // Ordenar: prop fila al lugar correcto
-      const sorted = [...seleccionados, propRow].sort((a,b) => a.vm2 - b.vm2);
-      // Rearmar tbody ordenado
-      const orderedRows = [];
-      let pi = 0;
-      sorted.forEach((item, idx) => {
-        if (item._esPropiedad) {
-          // fila verde
-          const propTr = tbody.querySelector('tr[style*="var(--verde)"]');
-          if (propTr) orderedRows.push(propTr.cloneNode(true));
-        } else {
-          const tr = document.getElementById(`rank-row-${item.id}`);
-          if (tr) orderedRows.push(tr.cloneNode(true));
-        }
-      });
-      // Agregar los no seleccionados al final
-      ants.filter(a => !seleccionados.find(s => s.id === a.id)).forEach(a => {
-        const tr = document.getElementById(`rank-row-${a.id}`);
-        if (tr) orderedRows.push(tr.cloneNode(true));
-      });
-      tbody.innerHTML = '';
-      orderedRows.forEach((tr, i) => {
-        // Actualizar posición
-        const firstTd = tr.querySelector('td:first-child');
-        if (firstTd && !firstTd.innerHTML.includes('★') && !firstTd.querySelector('input')) {
-          firstTd.textContent = i + 1;
-        }
-        tbody.appendChild(tr);
-        // Re-attach evento
-        const chk = tr.querySelector('input[type=checkbox]');
-        if (chk) chk.onchange = window._reconstruirRanking;
+      // Re-attach eventos
+      document.querySelectorAll('#ranking-tbody input[type=checkbox]').forEach(chk => {
+        chk.onchange = window._reconstruirRanking;
       });
     };
 
