@@ -742,6 +742,27 @@
           <div id="lp-precio-sugerido" style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--verde)">—</div>
           <div id="lp-precio-rango" style="font-size:11px;color:var(--gris-texto);margin-top:4px">Techo zona de prueba</div>
         </div>
+        <!-- PRECIO PRETENDIDO -->
+        <div style="margin-top:20px;background:#F5F5F3;border:1px solid var(--gris-borde);border-radius:2px;padding:16px 20px;">
+          <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:12px;font-weight:500;">Precio pretendido por el propietario</div>
+          <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
+            <div class="form-field" style="flex:0 0 200px">
+              <label>V/m² pretendido (USD)</label>
+              <input type="number" id="lp-pretendido" placeholder="Ej: 1100" step="25" oninput="calcularPretendido()">
+            </div>
+          </div>
+          <div id="lp-pretendido-resultado" style="display:none;display:flex;gap:12px;flex-wrap:wrap;">
+            <div id="lp-pret-prueba" style="padding:12px 20px;border-radius:2px;background:#FFF3DC;border:1px solid #E8A020;min-width:180px;">
+              <div style="font-size:8px;letter-spacing:1px;color:#B7770D;text-transform:uppercase;margin-bottom:4px;">Por encima de zona de prueba</div>
+              <div id="lp-pret-prueba-val" style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#B7770D;">—</div>
+            </div>
+            <div id="lp-pret-venta" style="padding:12px 20px;border-radius:2px;background:#DFF2EA;border:1px solid #2D7D46;min-width:180px;">
+              <div style="font-size:8px;letter-spacing:1px;color:#2D7D46;text-transform:uppercase;margin-bottom:4px;">Por encima de zona de venta</div>
+              <div id="lp-pret-venta-val" style="font-family:'Cormorant Garamond',serif;font-size:24px;font-weight:600;color:#2D7D46;">—</div>
+            </div>
+          </div>
+        </div>
+
         <div class="form-actions" style="margin-top:20px">
           <button class="btn-agregar" onclick="guardarLineaPrecios()">Guardar línea de precios</button>
           <button class="btn-op2" onclick="showRanking()" style="margin:0">Ir al Ranking →</button>
@@ -1312,7 +1333,10 @@
       window._tasacionActual = tasacion;
       window._antecedentes = tasacion.antecedentes || [];
       document.getElementById('op1-tasacion-info').textContent =
-        `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tasacion.tipo === 'dpto' ? 'Departamento' : tasacion.tipo}`;
+        (() => {
+        const tipos = { dpto:'Departamento', casa_sin:'Casa s/terreno', casa_con:'Casa c/terreno', lote:'Lote' };
+        return `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tipos[tasacion.tipo]||tasacion.tipo}`;
+      })();
 
       if (tasacion.tipo === 'casa_con') {
         // Módulo casa con terreno
@@ -1687,11 +1711,22 @@
   };
 
   // FACTORES DE PONDERACIÓN
-  const FACTORES = [
+  const FACTORES_DPTO = [
     'Ubicación', 'Antigüedad', 'Calidad constructiva', 'Mantenimiento',
     'Comodidades', 'Estacionamiento', 'Cochera', 'Revalorización del mercado',
     'Deseabilidad', 'Tiempo en mercado'
   ];
+
+  // Casa sin lote: 4 factores suelo + 5 factores construcción = 9 factores combinados en un solo producto F
+  const FACTORES_CASA_SIN = [
+    'Ubicación (suelo)', 'Superficie (suelo)', 'Ancho (suelo)', 'Factor (suelo)',
+    'Antigüedad (const.)', 'Calidad (const.)', 'Conservación (const.)', 'Deseabilidad (const.)', 'T. Publicación (const.)'
+  ];
+
+  const FACTORES = () => {
+    const tipo = window._tasacionActual?.tipo || 'dpto';
+    return tipo === 'casa_sin' ? FACTORES_CASA_SIN : FACTORES_DPTO;
+  };
 
   window.construirTablaPonderacion = () => {
     const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
@@ -1707,7 +1742,7 @@
     // Body — inputs por factor, restaurando valores guardados si existen
     const factoresGuardados = window._tasacionActual?.factoresPonderacion || [];
     const tbody = document.getElementById('pond-tbody');
-    tbody.innerHTML = FACTORES.map((f, fi) => {
+    tbody.innerHTML = FACTORES().map((f, fi) => {
       let cells = comps.map((c, ci) => {
         // Buscar valor guardado para este comparable y factor
         const guardado = factoresGuardados.find(fg => fg.id === c.id);
@@ -1746,7 +1781,7 @@
 
     comps.forEach((c, ci) => {
       let fh = 1;
-      FACTORES.forEach((f, fi) => {
+      FACTORES().forEach((f, fi) => {
         const input = document.getElementById(`pond-${fi}-${ci}`);
         if (input) fh *= parseFloat(input.value) || 1;
       });
@@ -1780,7 +1815,7 @@
     const factoresGuardados = [];
     comps.forEach((c, ci) => {
       const row = {};
-      FACTORES.forEach((f, fi) => {
+      FACTORES().forEach((f, fi) => {
         const input = document.getElementById(`pond-${fi}-${ci}`);
         row[f] = input ? parseFloat(input.value) || 1 : 1;
       });
@@ -1980,13 +2015,31 @@
 
     const bgMap  = { venta: '#2D5A45', prueba: '#E8A020', noventa: '#C0392B' };
     const zonaGrid = document.getElementById('lp-zonas-grid');
-    zonaGrid.innerHTML = celdas.map(c => {
-      const valorTotal = sup > 0 ? `<div style="font-size:12px;font-weight:600;margin-top:4px">USD ${Math.round(c.vm2 * sup).toLocaleString('es-AR')}</div>` : '';
-      return `<div style="background:${bgMap[c.zona]};color:white;padding:12px 10px;text-align:center;border-radius:2px;min-width:80px;flex:1">
-        <div style="font-size:10px;opacity:0.8;margin-bottom:2px">USD ${c.vm2.toLocaleString('es-AR')}/m²</div>
-        ${valorTotal}
-      </div>`;
-    }).join('');
+    zonaGrid.innerHTML = '<div style="width:100%">' +
+      '<div style="display:flex;gap:2px;margin-bottom:4px;">' +
+      celdas.map(c => {
+        const bg = bgMap[c.zona];
+        const valorTotal = sup > 0 ? `<div style="font-size:11px;font-weight:600;margin-top:3px">USD ${Math.round(c.vm2 * sup).toLocaleString('es-AR')}</div>` : '';
+        return `<div style="background:${bg};color:white;padding:10px 8px;text-align:center;border-radius:2px 2px 0 0;flex:1;min-width:70px">
+          <div style="font-size:9px;opacity:0.85">USD ${c.vm2.toLocaleString('es-AR')}/m²</div>
+          ${valorTotal}
+        </div>`;
+      }).join('') +
+      '</div>' +
+      (() => {
+        const bgLight = { venta:'#DFF2EA', prueba:'#FFF3DC', noventa:'#FDECEA' };
+        const txtCol  = { venta:'#2D7D46', prueba:'#B7770D', noventa:'#C0392B' };
+        const lbl     = { venta:'Zona de venta', prueba:'Zona de prueba', noventa:'Zona de no venta' };
+        const grupos = [];
+        let prev=null, cnt=0;
+        celdas.forEach((c,i)=>{
+          if(c.zona!==prev){ if(prev) grupos.push({zona:prev,cnt}); prev=c.zona; cnt=1; } else { cnt++; }
+          if(i===celdas.length-1) grupos.push({zona:prev,cnt});
+        });
+        return '<div style="display:flex;gap:2px;">' +
+          grupos.map(g=>`<div style="flex:${g.cnt};background:${bgLight[g.zona]};color:${txtCol[g.zona]};padding:5px 4px;text-align:center;border-radius:0 0 2px 2px;font-size:9px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;border:1px solid ${bgMap[g.zona]};border-top:none">${lbl[g.zona]}</div>`).join('') +
+          '</div>';
+      })() + '</div>'
 
     if (sup > 0) {
       const precioSug = Math.round(REF * sup);
@@ -2185,8 +2238,10 @@
   window.guardarRanking = async () => {
     if (!window._currentTasacionId) return;
     const { selIds, rankingFinal } = _getRankingData();
-    // Respetar estado existente — no pisar Completada con En proceso
-    const estadoActual = window._tasacionActual?.estado || 'En proceso';
+    // Leer estado actual directo desde Firebase para no pisar Completada
+    const snap2 = await getDocs(collection(db, 'tasaciones'));
+    let estadoActual = 'En proceso';
+    snap2.forEach(d => { if (d.id === window._currentTasacionId) estadoActual = d.data().estado || 'En proceso'; });
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
       rankingSeleccionados: selIds,
@@ -2210,6 +2265,7 @@
       rankingFinal,
       estado: 'Completada'
     });
+    if (window._tasacionActual) window._tasacionActual.estado = 'Completada';
     const btn = document.querySelector('button[onclick="finalizarTasacion()"]');
     if (btn) { btn.textContent = '✓ Tasación finalizada'; setTimeout(() => btn.textContent = 'Finalizar tasación ✓', 2500); }
   };
@@ -2350,6 +2406,31 @@
     const t = window._tasacionActual;
     if (!t) { alert('No hay tasación activa.'); return; }
     await _buildPDF(t);
+  };
+
+  window.calcularPretendido = () => {
+    const pretendido = parseFloat(document.getElementById('lp-pretendido').value);
+    const celdas = window._rangos || [];
+    if (!pretendido || !celdas.length) return;
+
+    // Techo zona de prueba = la celda de prueba con mayor vm2
+    const prueba = celdas.filter(c => c.zona === 'prueba');
+    const venta  = celdas.filter(c => c.zona === 'venta');
+    const techoPrueba = prueba.length ? Math.max(...prueba.map(c => c.vm2||c.desde||0)) : 0;
+    const techoVenta  = venta.length  ? Math.max(...venta.map(c => c.vm2||c.desde||0))  : 0;
+
+    const pctPrueba = techoPrueba > 0 ? (((pretendido - techoPrueba) / techoPrueba) * 100) : null;
+    const pctVenta  = techoVenta  > 0 ? (((pretendido - techoVenta)  / techoVenta)  * 100) : null;
+
+    const fmt = (pct) => {
+      if (pct === null) return '—';
+      const sign = pct >= 0 ? '+' : '';
+      return `${sign}${pct.toFixed(1)}%`;
+    };
+
+    document.getElementById('lp-pret-prueba-val').textContent = fmt(pctPrueba);
+    document.getElementById('lp-pret-venta-val').textContent  = fmt(pctVenta);
+    document.getElementById('lp-pretendido-resultado').style.display = 'flex';
   };
 
   window.toggleTodosRanking = (checked) => {
@@ -2766,7 +2847,7 @@
       py+=7;
 
       // Rows factores
-      FACTORES.forEach((f,fi)=>{
+      FACTORES().forEach((f,fi)=>{
         const bg = fi%2===0?[255,255,255]:[245,245,243];
         doc.setFillColor(...bg); doc.rect(14,py,269,6,'F');
         doc.setTextColor(...CNg); doc.setFont('helvetica','normal'); doc.setFontSize(6.5);
