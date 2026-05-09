@@ -457,8 +457,11 @@
         </div>
         <div class="form-grid-4">
           <div class="form-field"><label>Sup. Total (m²)</label><input type="number" id="f-sup-total" placeholder="50"></div>
+          <div class="form-field" id="f-sup-terreno-wrap"><label>Sup. Terreno (m²)</label><input type="number" id="f-sup-terreno" placeholder="200"></div>
           <div class="form-field"><label>Sup. Cubierta (m²)</label><input type="number" id="f-sup-cub" placeholder="37"></div>
-          <div class="form-field"><label>Sup. Descubierta (m²)</label><input type="number" id="f-sup-desc" placeholder="0"></div>
+          <div class="form-field" id="f-sup-desc-wrap"><label id="f-sup-desc-lbl">Sup. Descubierta (m²)</label><input type="number" id="f-sup-desc" placeholder="0"></div>
+        </div>
+        <div class="form-grid-4" id="f-tipo-wrap">
           <div class="form-field">
             <label>Tipo sup. desc.</label>
             <select id="f-tipo">
@@ -466,8 +469,11 @@
               <option value="Balcón">Balcón</option>
               <option value="Terraza">Terraza</option>
               <option value="Patio">Patio</option>
+              <option value="Jardín">Jardín</option>
+              <option value="Patio/Jardín">Patio/Jardín</option>
             </select>
           </div>
+          <div class="form-field" id="f-sup-semi-wrap"><label>Sup. Semicubierta (m²)</label><input type="number" id="f-sup-semi" placeholder="0"></div>
         </div>
         <div class="form-grid-4">
           <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0 = a estrenar"></div>
@@ -596,9 +602,14 @@
           <div class="form-field"><label>Precio sugerido (USD)</label><input type="number" id="p-precio" placeholder="45000"></div>
         </div>
         <div class="form-grid-3">
-          <div class="form-field"><label>Sup. propia (m²)</label><input type="number" id="p-sup-propia" placeholder="40"></div>
-          <div class="form-field"><label>Sup. balcón (m²)</label><input type="number" id="p-sup-balcon" placeholder="0"></div>
+          <div class="form-field"><label id="lbl-sup-propia">Sup. cubierta (m²)</label><input type="number" id="p-sup-propia" placeholder="40" oninput="calcularSupHom()"></div>
+          <div class="form-field" id="p-sup-balcon-wrap"><label>Sup. balcón / semicub. (m²)</label><input type="number" id="p-sup-balcon" placeholder="0" oninput="calcularSupHom()"></div>
+          <div class="form-field" id="p-sup-terreno-wrap"><label>Sup. terreno (m²)</label><input type="number" id="p-sup-terreno" placeholder="200"></div>
+        </div>
+        <div class="form-grid-3">
           <div class="form-field"><label>Sup. homogeneizada</label><input type="number" id="p-sup-hom" placeholder="0" readonly style="background:#e8f4ee;font-weight:600;color:#2D5A45"></div>
+          <div class="form-field" id="p-jardín-wrap"><label>Jardín / patio (m²)</label><input type="number" id="p-sup-jardin" placeholder="0"></div>
+          <div class="form-field" id="p-cochera-wrap"><label>Cochera</label><select id="p-cochera"><option value="No">No</option><option value="Sí">Sí</option></select></div>
         </div>
         <div class="form-actions">
           <button class="btn-agregar" onclick="guardarPropiedad()">Guardar propiedad</button>
@@ -619,11 +630,11 @@
               <th>Dirección</th>
               <th>Precio</th>
               <th>Sup. Cub.</th>
-              <th>Balcón</th>
+              <th id="th-balcon-terreno">Balcón</th>
               <th>Ant.</th>
               <th>Dorm.</th>
               <th>Disp.</th>
-              <th>Amenities</th>
+              <th id="th-amenities">Amenities</th>
               <th>Estado</th>
               <th>Días pub.</th>
               <th>V/m²</th>
@@ -1372,6 +1383,8 @@
       doc: document.getElementById('f-doc').value || null,
       supTotal: parseFloat(document.getElementById('f-sup-total').value) || null,
       supCub,
+      supTerreno: parseFloat(document.getElementById('f-sup-terreno').value) || null,
+      supSemi: parseFloat(document.getElementById('f-sup-semi').value) || null,
       supDesc: parseFloat(document.getElementById('f-sup-desc').value) || null,
       tipo: document.getElementById('f-tipo').value || null,
       ant: parseInt(document.getElementById('f-ant').value) ?? null,
@@ -1418,6 +1431,8 @@
     document.getElementById('f-doc').value = ant.doc || '';
     document.getElementById('f-sup-total').value = ant.supTotal || '';
     document.getElementById('f-sup-cub').value = ant.supCub || '';
+    document.getElementById('f-sup-terreno').value = ant.supTerreno || '';
+    document.getElementById('f-sup-semi').value = ant.supSemi || '';
     document.getElementById('f-sup-desc').value = ant.supDesc || '';
     document.getElementById('f-tipo').value = ant.tipo || '';
     document.getElementById('f-ant').value = ant.ant ?? '';
@@ -1460,6 +1475,8 @@
       doc: document.getElementById('f-doc').value || null,
       supTotal: parseFloat(document.getElementById('f-sup-total').value) || null,
       supCub,
+      supTerreno: parseFloat(document.getElementById('f-sup-terreno').value) || null,
+      supSemi: parseFloat(document.getElementById('f-sup-semi').value) || null,
       supDesc: parseFloat(document.getElementById('f-sup-desc').value) || null,
       tipo: document.getElementById('f-tipo').value || null,
       ant: parseInt(document.getElementById('f-ant').value) ?? null,
@@ -1583,7 +1600,7 @@
   // LIMPIAR FORM
   window.limpiarForm = () => {
     window._editingId = null;
-    ['f-barrio','f-direccion','f-link','f-img','f-dias','f-viz','f-precio','f-sup-total','f-sup-cub','f-sup-desc','f-ant','f-dorm','f-ban','f-piso']
+    ['f-barrio','f-direccion','f-link','f-img','f-dias','f-viz','f-precio','f-sup-total','f-sup-terreno','f-sup-cub','f-sup-desc','f-sup-semi','f-ant','f-dorm','f-ban','f-piso']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-tipo').value = '';
     document.getElementById('f-doc').value = '';
@@ -1608,6 +1625,10 @@
     renderComparables();
     // Cargar datos propiedad si ya estaban guardados
     const t = window._tasacionActual;
+    // Limpiar campos Op2 primero
+    ['p-barrio','p-direccion','p-precio','p-sup-propia','p-sup-balcon','p-sup-terreno','p-sup-jardin','p-sup-hom']
+      .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+    adaptarFormularioPorTipo();
     if (t?.propiedad) {
       document.getElementById('p-barrio').value = t.propiedad.barrio || '';
       document.getElementById('p-direccion').value = t.propiedad.direccion || '';
@@ -1626,9 +1647,15 @@
 
   // CALCULAR SUP HOMOGENEIZADA (cubierta 100% + balcón 30%)
   window.calcularSupHom = () => {
+    const tipo = window._tasacionActual?.tipo || 'dpto';
     const propia = parseFloat(document.getElementById('p-sup-propia').value) || 0;
-    const balcon = parseFloat(document.getElementById('p-sup-balcon').value) || 0;
-    const hom = propia * 1 + balcon * 0.3;
+    let hom;
+    if (tipo === 'casa_sin') {
+      hom = propia; // Casa: sup cubierta directa sin balcón
+    } else {
+      const balcon = parseFloat(document.getElementById('p-sup-balcon').value) || 0;
+      hom = propia + balcon * 0.3;
+    }
     document.getElementById('p-sup-hom').value = hom.toFixed(2);
   };
   document.getElementById('p-sup-propia').addEventListener('input', calcularSupHom);
@@ -1642,6 +1669,8 @@
       precio: parseFloat(document.getElementById('p-precio').value) || null,
       supPropia: parseFloat(document.getElementById('p-sup-propia').value) || null,
       supBalcon: parseFloat(document.getElementById('p-sup-balcon').value) || null,
+      supTerreno: parseFloat(document.getElementById('p-sup-terreno').value) || null,
+      supJardin: parseFloat(document.getElementById('p-sup-jardin').value) || null,
       supHom: parseFloat(document.getElementById('p-sup-hom').value) || null,
     };
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), { propiedad });
@@ -1726,6 +1755,44 @@
   const FACTORES = () => {
     const tipo = window._tasacionActual?.tipo || 'dpto';
     return tipo === 'casa_sin' ? FACTORES_CASA_SIN : FACTORES_DPTO;
+  };
+
+
+  // ── ADAPTAR FORMULARIO SEGÚN TIPO ────────────────────────────────────────
+  window.adaptarFormularioPorTipo = () => {
+    const tipo = window._tasacionActual?.tipo || 'dpto';
+    const esCasa = tipo === 'casa_sin';
+
+    // Op1 — mostrar/ocultar campos según tipo
+    const supTerrenoWrap = document.getElementById('f-sup-terreno-wrap');
+    const supDescWrap    = document.getElementById('f-sup-desc-wrap');
+    const tipoWrap       = document.getElementById('f-tipo-wrap');
+    const supSemiWrap    = document.getElementById('f-sup-semi-wrap');
+    const supDescLbl     = document.getElementById('f-sup-desc-lbl');
+
+    if (supTerrenoWrap) supTerrenoWrap.style.display = esCasa ? '' : 'none';
+    if (supSemiWrap)    supSemiWrap.style.display    = esCasa ? '' : 'none';
+    if (supDescLbl && esCasa) supDescLbl.textContent = 'Sup. Descubierta / Patio (m²)';
+    if (supDescLbl && !esCasa) supDescLbl.textContent = 'Sup. Descubierta (m²)';
+
+    // Op2 — mostrar/ocultar campos propiedad
+    const balconWrap   = document.getElementById('p-sup-balcon-wrap');
+    const terrenoWrap  = document.getElementById('p-sup-terreno-wrap');
+    const jardinWrap   = document.getElementById('p-jardín-wrap');
+    const cocheraWrap  = document.getElementById('p-cochera-wrap');
+    const lblSupPropia = document.getElementById('lbl-sup-propia');
+
+    if (balconWrap)  balconWrap.style.display  = esCasa ? 'none' : '';
+    if (terrenoWrap) terrenoWrap.style.display = esCasa ? '' : 'none';
+    if (jardinWrap)  jardinWrap.style.display  = esCasa ? '' : 'none';
+    if (cocheraWrap) cocheraWrap.style.display = esCasa ? '' : 'none';
+    if (lblSupPropia) lblSupPropia.textContent = esCasa ? 'Sup. cubierta (m²)' : 'Sup. propia (m²)';
+
+    // Tabla comparables Op2 — cambiar encabezados según tipo
+    const thBalTer = document.getElementById('th-balcon-terreno');
+    const thAmen   = document.getElementById('th-amenities');
+    if (thBalTer) thBalTer.textContent = esCasa ? 'Sup. Terreno' : 'Balcón';
+    if (thAmen)   thAmen.style.display  = esCasa ? 'none' : '';
   };
 
   window.construirTablaPonderacion = () => {
@@ -2337,6 +2404,7 @@
   window.showOp1 = () => {
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('op1-screen').style.display = 'block';
+    adaptarFormularioPorTipo();
     document.getElementById('op2-screen').style.display = 'none';
     document.getElementById('lp-screen').style.display = 'none';
     document.getElementById('ranking-screen').style.display = 'none';
