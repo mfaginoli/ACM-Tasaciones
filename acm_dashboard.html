@@ -435,34 +435,21 @@
       <!-- FORMULARIO CARGA -->
       <div class="op1-form">
         <div class="op1-form-title">Cargar nuevo antecedente</div>
-        <div class="form-grid-3">
+
+        <!-- Fila 1: Ubicación y links -->
+        <div class="form-grid-3" style="margin-bottom:10px">
           <div class="form-field"><label>Barrio</label><input type="text" id="f-barrio" placeholder="Ej: Alberdi"></div>
           <div class="form-field"><label>Dirección</label><input type="text" id="f-direccion" placeholder="Ej: Av. Colón 1234"></div>
-          <div class="form-field"><label>Link del antecedente</label><input type="text" id="f-link" placeholder="zonaprop.com.ar/..."></div>
-          <div class="form-field"><label>URL imagen captura</label><input type="text" id="f-img" placeholder="drive.google.com/uc?export=view&id=..."></div>
-        </div>
-        <div class="form-grid-4">
-          <div class="form-field"><label>Días publicado</label><input type="number" id="f-dias" placeholder="60"></div>
-          <div class="form-field"><label>Visualizaciones</label><input type="number" id="f-viz" placeholder="100"></div>
           <div class="form-field"><label>Precio (USD)</label><input type="number" id="f-precio" placeholder="45000"></div>
-          <div class="form-field">
-            <label>Documentación</label>
-            <select id="f-doc">
-              <option value="">— Sin datos —</option>
-              <option value="Escritura">Escritura</option>
-              <option value="Boleto CV">Boleto de CV</option>
-              <option value="En trámite">En trámite</option>
-            </select>
-          </div>
         </div>
-        <div class="form-grid-4">
-          <div class="form-field"><label>Sup. Total (m²)</label><input type="number" id="f-sup-total" placeholder="50"></div>
+
+        <!-- Fila 2: Superficies -->
+        <div class="form-grid-4" style="margin-bottom:10px">
+          <div class="form-field"><label id="lbl-sup-total">Sup. Total (m²)</label><input type="number" id="f-sup-total" placeholder="50"></div>
           <div class="form-field"><label>Sup. Cubierta (m²)</label><input type="number" id="f-sup-cub" placeholder="37"></div>
           <div class="form-field" id="f-sup-desc-wrap"><label id="f-sup-desc-lbl">Sup. Descubierta (m²)</label><input type="number" id="f-sup-desc" placeholder="0"></div>
-        </div>
-        <div class="form-grid-4" id="f-tipo-wrap">
-          <div class="form-field">
-            <label>Tipo sup. desc.</label>
+          <div class="form-field" id="f-tipo-desc-wrap">
+            <label>Tipo desc.</label>
             <select id="f-tipo">
               <option value="">— Sin descubierta —</option>
               <option value="Balcón">Balcón</option>
@@ -472,12 +459,16 @@
               <option value="Patio/Jardín">Patio/Jardín</option>
             </select>
           </div>
-          <div class="form-field" id="f-sup-semi-wrap"><label>Sup. Semicubierta (m²)</label><input type="number" id="f-sup-semi" placeholder="0"></div>
         </div>
-        <div class="form-grid-4">
+        <div class="form-grid-4" style="margin-bottom:10px" id="f-tipo-wrap">
+          <div class="form-field" id="f-sup-semi-wrap"><label>Sup. Semicubierta (m²)</label><input type="number" id="f-sup-semi" placeholder="0"></div>
           <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0 = a estrenar"></div>
           <div class="form-field"><label>Dormitorios</label><input type="number" id="f-dorm" placeholder="1"></div>
           <div class="form-field"><label>Baños</label><input type="number" id="f-ban" placeholder="1"></div>
+        </div>
+
+        <!-- Fila 3: Características -->
+        <div class="form-grid-4" style="margin-bottom:10px">
           <div class="form-field">
             <label>Cochera</label>
             <select id="f-coch">
@@ -485,18 +476,21 @@
               <option value="Sí">Sí</option>
             </select>
           </div>
-        </div>
-        <div class="form-grid-3">
           <div class="form-field">
-            <label>Estado</label>
-            <select id="f-estado">
+            <label>Estado <span style="font-size:9px;color:var(--gris-texto)">(etiqueta)</span></label>
+            <select id="f-estado" onchange="sincEstadoNum()">
               <option value="">—</option>
               <option value="A estrenar">A estrenar</option>
               <option value="Excelente">Excelente</option>
               <option value="Muy bueno">Muy bueno</option>
               <option value="Bueno">Bueno</option>
               <option value="Regular">Regular</option>
+              <option value="Malo">Malo</option>
             </select>
+          </div>
+          <div class="form-field">
+            <label>Estado <span style="font-size:9px;color:var(--gris-texto)">(1–10)</span></label>
+            <input type="number" id="f-estado-num" min="1" max="10" step="1" placeholder="1–10" oninput="sincEstadoLabel()">
           </div>
           <div class="form-field">
             <label>Disposición</label>
@@ -508,11 +502,71 @@
               <option value="Interno">Interno</option>
             </select>
           </div>
-          <div class="form-field"><label>Piso</label><input type="number" id="f-piso" placeholder="1"></div>
         </div>
+
+        <!-- Fila 4: Datos de publicación + doc + link -->
+        <div class="form-grid-4" style="margin-bottom:10px">
+          <div class="form-field"><label>Días publicado</label><input type="number" id="f-dias" placeholder="60"></div>
+          <div class="form-field"><label>Visualizaciones</label><input type="number" id="f-viz" placeholder="100"></div>
+          <div class="form-field"><label>Piso</label><input type="number" id="f-piso" placeholder="1"></div>
+          <div class="form-field">
+            <label>Documentación</label>
+            <select id="f-doc">
+              <option value="">— Sin datos —</option>
+              <option value="Escritura">Escritura</option>
+              <option value="Boleto CV">Boleto de CV</option>
+              <option value="En trámite">En trámite</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-grid-3" style="margin-bottom:10px">
+          <div class="form-field"><label>Link del antecedente</label><input type="text" id="f-link" placeholder="zonaprop.com.ar/..."></div>
+          <div class="form-field"><label>URL imagen captura</label><input type="text" id="f-img" placeholder="drive.google.com/uc?export=view&id=..."></div>
+        </div>
+
         <div class="form-actions">
           <button class="btn-agregar" id="btn-agregar" onclick="agregarAntecedente()">+ Agregar antecedente</button>
           <button class="btn-limpiar" onclick="limpiarForm()">Limpiar</button>
+          <button class="btn-op2" onclick="mostrarImportacion()" style="margin:0;background:#3D7A5E">📋 Importar en lote</button>
+        </div>
+      </div>
+
+      <!-- MODAL IMPORTACIÓN EN LOTE -->
+      <div id="modal-importacion" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;overflow:auto">
+        <div style="background:white;margin:40px auto;max-width:900px;border-radius:4px;padding:32px">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+            <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--verde)">Importar antecedentes en lote</div>
+            <button onclick="document.getElementById('modal-importacion').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gris-texto)">✕</button>
+          </div>
+          <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px">
+            Pegá los datos en la tabla. Cada fila es un antecedente. Podés editar cualquier celda antes de importar.
+          </div>
+          <div style="overflow-x:auto;margin-bottom:16px">
+            <table id="import-table" style="border-collapse:collapse;width:100%;font-size:12px">
+              <thead>
+                <tr style="background:var(--verde);color:white">
+                  <th style="padding:8px 10px;white-space:nowrap">Barrio</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Dirección</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Precio USD</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Sup. Total</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Sup. Cub.</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Sup. Desc.</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Ant.</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Dorm.</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Baños</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Estado</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Días</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Viz.</th>
+                  <th style="padding:8px 10px;white-space:nowrap">Link</th>
+                </tr>
+              </thead>
+              <tbody id="import-tbody"></tbody>
+            </table>
+          </div>
+          <div style="display:flex;gap:12px">
+            <button class="btn-agregar" onclick="agregarFilaImport()">+ Agregar fila</button>
+            <button class="btn-op2" onclick="confirmarImportacion()" style="margin:0">✓ Importar todos</button>
+          </div>
         </div>
       </div>
 
@@ -618,7 +672,15 @@
       <!-- SELECCIÓN DE COMPARABLES -->
       <div class="section-header" style="margin-bottom:12px">
         <div class="section-title">Seleccioná los comparables directos</div>
-        <span style="font-size:12px;color:var(--gris-texto)"><span id="comp-count">0</span> seleccionados</span>
+        <div style="display:flex;align-items:center;gap:16px">
+          <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--gris-texto)">
+            <input type="checkbox" id="comp-chk-all" checked
+              style="width:15px;height:15px;accent-color:var(--verde)"
+              onchange="toggleTodosComparables(this.checked)">
+            Seleccionar todos
+          </label>
+          <span style="font-size:12px;color:var(--gris-texto)"><span id="comp-count">0</span> seleccionados</span>
+        </div>
       </div>
       <div class="table-wrap" style="margin-bottom:24px">
         <table>
@@ -1099,6 +1161,21 @@
       </div>
     </div>
 
+
+    <!-- MODAL DETALLE ANTECEDENTE -->
+    <div id="modal-detalle-ant" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:flex-start;justify-content:center;overflow:auto;padding:40px 20px">
+      <div style="background:white;width:100%;max-width:600px;border-radius:4px;padding:28px;position:relative">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+          <div id="det-titulo" style="font-family:'Cormorant Garamond',serif;font-size:20px;color:var(--verde);font-weight:600"></div>
+          <button onclick="document.getElementById('modal-detalle-ant').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gris-texto)">✕</button>
+        </div>
+        <div id="det-img"></div>
+        <div id="det-body"></div>
+        <div style="margin-top:20px;display:flex;gap:12px">
+          <button id="det-edit-btn" class="btn-agregar">✏️ Editar antecedente</button>
+        </div>
+      </div>
+    </div>
   </main>
 </div>
 
@@ -1230,6 +1307,121 @@
     if (!confirm(`¿Eliminar la tasación "${nombre}"?\nEsta acción no se puede deshacer.`)) return;
     await deleteDoc(doc(db, 'tasaciones', id));
     cargarTasaciones();
+  };
+
+
+  // ── ESTADO NUMÉRICO SINCRONIZADO ────────────────────────────────────────
+  const ESTADO_MAP = {
+    'A estrenar':10,'Excelente':9,'Muy bueno':8,'Bueno':6,'Regular':4,'Malo':2
+  };
+  const ESTADO_NUM_MAP = {10:'A estrenar',9:'Excelente',8:'Muy bueno',7:'Muy bueno',
+    6:'Bueno',5:'Bueno',4:'Regular',3:'Regular',2:'Malo',1:'Malo'};
+
+  window.sincEstadoNum = () => {
+    const sel = document.getElementById('f-estado').value;
+    const num = ESTADO_MAP[sel];
+    if (num) document.getElementById('f-estado-num').value = num;
+  };
+
+  window.sincEstadoLabel = () => {
+    const num = parseInt(document.getElementById('f-estado-num').value);
+    if (num >= 1 && num <= 10) {
+      const lbl = ESTADO_NUM_MAP[num] || 'Bueno';
+      document.getElementById('f-estado').value = lbl;
+    }
+  };
+
+  // ── MODAL DETALLE ANTECEDENTE ────────────────────────────────────────────
+  window.verAntecedente = (id) => {
+    const a = window._antecedentes.find(x => Number(x.id) === Number(id));
+    if (!a) return;
+    const modal = document.getElementById('modal-detalle-ant');
+    if (!modal) return;
+    document.getElementById('det-titulo').textContent = `${a.direccion||'—'}, ${a.barrio||'—'}`;
+    const fields = [
+      ['Dirección', a.direccion], ['Barrio', a.barrio], ['Precio', `USD ${Number(a.precio||0).toLocaleString('es-AR')}`],
+      ['Sup. Total', a.supTotal ? `${a.supTotal} m²` : '—'],
+      ['Sup. Cubierta', a.supCub ? `${a.supCub} m²` : '—'],
+      ['Sup. Descubierta', a.supDesc ? `${a.supDesc} m²` : '—'],
+      ['Tipo desc.', a.tipo||'—'], ['Sup. Semicubierta', a.supSemi ? `${a.supSemi} m²` : '—'],
+      ['Antigüedad', a.ant != null ? (a.ant===0?'A estrenar':`${a.ant} años`) : '—'],
+      ['Dormitorios', a.dorm||'—'], ['Baños', a.ban||'—'], ['Cochera', a.coch||'No'],
+      ['Estado', `${a.estado||'—'}${a.estadoNum ? ` (${a.estadoNum}/10)` : ''}`],
+      ['Disposición', a.planta||'—'], ['Piso', a.piso||'—'],
+      ['Días publicado', a.dias||'—'], ['Visualizaciones', a.viz||'—'],
+      ['Documentación', a.doc||'—'], ['V/m²', `USD ${Number(a.vm2||0).toLocaleString('es-AR')}`],
+      ['Amenities', a.amenities||'—'], ['Link', a.link ? `<a href="https://${a.link.replace('https://','')}" target="_blank" style="color:var(--verde)">Ver publicación →</a>` : '—'],
+    ];
+    document.getElementById('det-body').innerHTML = fields.map(([k,v]) =>
+      `<div style="display:flex;gap:12px;padding:8px 0;border-bottom:1px solid #f0f0f0">
+        <div style="font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--gris-texto);width:140px;flex-shrink:0">${k}</div>
+        <div style="font-size:13px;color:#222">${v||'—'}</div>
+      </div>`
+    ).join('');
+    if (a.imgUrl) {
+      document.getElementById('det-img').innerHTML = `<img src="${a.imgUrl}" style="width:100%;border-radius:2px;margin-bottom:16px" onerror="this.style.display='none'">`;
+    } else {
+      document.getElementById('det-img').innerHTML = '';
+    }
+    // Botón editar
+    document.getElementById('det-edit-btn').onclick = () => {
+      document.getElementById('modal-detalle-ant').style.display = 'none';
+      editarAnt(id);
+    };
+    modal.style.display = 'flex';
+  };
+
+  // ── IMPORTACIÓN EN LOTE ──────────────────────────────────────────────────
+  window.mostrarImportacion = () => {
+    const modal = document.getElementById('modal-importacion');
+    const tbody = document.getElementById('import-tbody');
+    // Iniciar con 3 filas vacías
+    if (tbody.children.length === 0) {
+      for (let i=0;i<3;i++) agregarFilaImport();
+    }
+    modal.style.display = 'block';
+  };
+
+  window.agregarFilaImport = () => {
+    const tbody = document.getElementById('import-tbody');
+    const i = tbody.children.length;
+    const bg = i%2===0?'white':'#F7F7F5';
+    const cols = ['barrio','direccion','precio','supTotal','supCub','supDesc','ant','dorm','ban','estado','dias','viz','link'];
+    tbody.insertAdjacentHTML('beforeend', `<tr style="background:${bg}" data-row="${i}">
+      ${cols.map(c=>`<td style="padding:2px 4px"><input data-field="${c}" style="width:100%;border:1px solid #ddd;border-radius:2px;padding:4px 6px;font-size:11px;min-width:${c==='link'?'160px':'70px'}" placeholder="${c}"></td>`).join('')}
+      <td style="padding:2px 4px"><button onclick="this.closest('tr').remove()" style="background:none;border:none;color:#999;cursor:pointer;font-size:14px">✕</button></td>
+    </tr>`);
+  };
+
+  window.confirmarImportacion = async () => {
+    const tbody = document.getElementById('import-tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+    const nuevos = [];
+    for (const row of rows) {
+      const get = (field) => row.querySelector(`[data-field="${field}"]`)?.value?.trim() || null;
+      const precio = parseFloat(get('precio'));
+      const supCub = parseFloat(get('supCub'));
+      if (!precio || !supCub) continue;
+      const vm2 = Math.round(precio / supCub);
+      const ant = {
+        id: Date.now() + Math.random(),
+        barrio: get('barrio'), direccion: get('direccion'),
+        precio, supTotal: parseFloat(get('supTotal'))||null,
+        supCub, supDesc: parseFloat(get('supDesc'))||null,
+        ant: parseInt(get('ant'))||null, dorm: parseInt(get('dorm'))||null,
+        ban: parseInt(get('ban'))||null, estado: get('estado'),
+        dias: parseInt(get('dias'))||null, viz: parseInt(get('viz'))||null,
+        link: get('link'), vm2, doc: null, coch: 'No', planta: null, piso: null,
+      };
+      nuevos.push(ant);
+    }
+    if (!nuevos.length) { alert('No hay datos válidos para importar (precio y sup. cubierta son obligatorios).'); return; }
+    window._antecedentes = [...window._antecedentes, ...nuevos];
+    await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ antecedentes: window._antecedentes });
+    document.getElementById('modal-importacion').style.display = 'none';
+    document.getElementById('import-tbody').innerHTML = '';
+    renderAntecedentes();
+    alert(`✓ ${nuevos.length} antecedente${nuevos.length>1?'s':''} importado${nuevos.length>1?'s':''}.`);
   };
 
   window.cargarTasaciones = async () => {
@@ -1391,6 +1583,7 @@
       ban: parseInt(document.getElementById('f-ban').value) || null,
       coch: document.getElementById('f-coch').value,
       estado: document.getElementById('f-estado').value || null,
+      estadoNum: parseInt(document.getElementById('f-estado-num').value)||null,
       planta: document.getElementById('f-planta').value || null,
       piso: parseInt(document.getElementById('f-piso').value) || null,
       vm2: Math.round(precio / supCub)
@@ -1439,6 +1632,7 @@
     document.getElementById('f-ban').value = ant.ban || '';
     document.getElementById('f-coch').value = ant.coch || 'No';
     document.getElementById('f-estado').value = ant.estado || '';
+    document.getElementById('f-estado-num').value = ant.estadoNum || '';
     document.getElementById('f-planta').value = ant.planta || '';
     document.getElementById('f-piso').value = ant.piso || '';
 
@@ -1483,6 +1677,7 @@
       ban: parseInt(document.getElementById('f-ban').value) || null,
       coch: document.getElementById('f-coch').value,
       estado: document.getElementById('f-estado').value || null,
+      estadoNum: parseInt(document.getElementById('f-estado-num').value)||null,
       planta: document.getElementById('f-planta').value || null,
       piso: parseInt(document.getElementById('f-piso').value) || null,
       vm2: Math.round(precio / supCub)
@@ -1536,12 +1731,13 @@
         <td>${a.dorm||'—'}</td>
         <td>${a.ban||'—'}</td>
         <td>${a.coch||'—'}</td>
-        <td>${a.estado||'—'}</td>
+        <td>${a.estado||'—'}${a.estadoNum?` (${a.estadoNum}/10)`:''}</td>
         <td>${a.planta||'—'}</td>
         <td>${a.piso||'—'}</td>
         <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
         <td>${a.link ? `<a href="https://${a.link.replace('https://','')}" target="_blank" style="color:var(--verde);font-size:11px">Ver →</a>` : '—'}</td>
         <td style="white-space:nowrap">
+          <button class="btn-del" onclick="verAntecedente(${a.id})" title="Ver detalle" style="color:var(--verde);margin-right:4px">👁</button>
           <button class="btn-del" onclick="editarAnt(${a.id})" title="Editar" style="color:var(--gris-texto);margin-right:4px">✏️</button>
           <button class="btn-del" onclick="eliminarAnt(${a.id})" title="Eliminar">✕</button>
         </td>
@@ -1551,6 +1747,7 @@
     // Promedios
     const ants = window._antecedentes;
     const prom = arr => arr.length ? Math.round(arr.reduce((s,v)=>s+v,0)/arr.length) : null;
+    const tipo = window._tasacionActual?.tipo || 'dpto';
     const stats = [
       { label: 'Precio promedio',           val: prom(ants.map(a=>a.precio).filter(Boolean)),              fmt: v => `USD ${v.toLocaleString('es-AR')}` },
       { label: 'V/m² promedio',             val: prom(ants.map(a=>a.vm2).filter(Boolean)),                 fmt: v => `USD ${v.toLocaleString('es-AR')}` },
@@ -1558,6 +1755,7 @@
       { label: 'Visualizaciones promedio',  val: prom(ants.map(a=>parseInt(a.viz)).filter(v=>v>0)),        fmt: v => v.toLocaleString('es-AR') },
       { label: 'Antigüedad promedio',       val: prom(ants.map(a=>parseInt(a.ant)).filter(v=>v>=0)),       fmt: v => `${v} años` },
       { label: 'Sup. cubierta promedio',    val: prom(ants.map(a=>parseFloat(a.supCub)).filter(v=>v>0)),   fmt: v => `${v} m²` },
+      ...(tipo === 'casa_sin' ? [{ label: 'Sup. terreno promedio', val: prom(ants.map(a=>parseFloat(a.supTotal)).filter(v=>v>0)), fmt: v => `${v} m²` }] : []),
     ];
     const grid = document.getElementById('ant-promedios-grid');
     if (grid) {
@@ -1599,7 +1797,7 @@
   // LIMPIAR FORM
   window.limpiarForm = () => {
     window._editingId = null;
-    ['f-barrio','f-direccion','f-link','f-img','f-dias','f-viz','f-precio','f-sup-total','f-sup-cub','f-sup-desc','f-sup-semi','f-ant','f-dorm','f-ban','f-piso']
+    ['f-barrio','f-direccion','f-link','f-img','f-dias','f-viz','f-precio','f-sup-total','f-sup-cub','f-sup-desc','f-sup-semi','f-ant','f-dorm','f-ban','f-piso','f-estado-num']
       .forEach(id => document.getElementById(id).value = '');
     document.getElementById('f-tipo').value = '';
     document.getElementById('f-doc').value = '';
@@ -2383,18 +2581,33 @@
       document.getElementById('op2-tasacion-info').textContent =
         `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tasacion.tipo === 'dpto' ? 'Departamento' : tasacion.tipo}`;
 
+      // Adaptar formulario según tipo antes de cargar datos
+      adaptarFormularioPorTipo();
+
+      // Limpiar campos primero
+      ['p-barrio','p-direccion','p-precio','p-sup-propia','p-sup-balcon',
+       'p-sup-terreno','p-sup-jardin','p-sup-hom']
+        .forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+
       // Cargar datos propiedad si ya estaban guardados
       if (tasacion.propiedad) {
-        document.getElementById('p-barrio').value = tasacion.propiedad.barrio || tasacion.barrio || '';
-        document.getElementById('p-direccion').value = tasacion.propiedad.direccion || tasacion.direccion || '';
-        document.getElementById('p-precio').value = tasacion.propiedad.precio || '';
-        document.getElementById('p-sup-propia').value = tasacion.propiedad.supPropia || '';
-        document.getElementById('p-sup-balcon').value = tasacion.propiedad.supBalcon || '';
+        const p = tasacion.propiedad;
+        document.getElementById('p-barrio').value    = p.barrio    || tasacion.barrio    || '';
+        document.getElementById('p-direccion').value = p.direccion || tasacion.direccion || '';
+        document.getElementById('p-precio').value    = p.precio    || tasacion.precioSugerido || '';
+        document.getElementById('p-sup-propia').value = p.supPropia || '';
+        const balconEl  = document.getElementById('p-sup-balcon');
+        const terrenoEl = document.getElementById('p-sup-terreno');
+        const jardinEl  = document.getElementById('p-sup-jardin');
+        if (balconEl)  balconEl.value  = p.supBalcon  || '';
+        if (terrenoEl) terrenoEl.value = p.supTerreno || '';
+        if (jardinEl)  jardinEl.value  = p.supJardin  || '';
         calcularSupHom();
       } else {
-        // Pre-cargar desde datos de la tasación
-        document.getElementById('p-barrio').value = tasacion.barrio || '';
+        // Pre-cargar desde datos base de la tasación
+        document.getElementById('p-barrio').value    = tasacion.barrio    || '';
         document.getElementById('p-direccion').value = tasacion.direccion || '';
+        document.getElementById('p-precio').value    = tasacion.precioSugerido || '';
       }
 
       renderComparables();
@@ -2525,6 +2738,21 @@
     document.getElementById('lp-pret-prueba-val').textContent = fmt(pctPrueba);
     document.getElementById('lp-pret-venta-val').textContent  = fmt(pctVenta);
     document.getElementById('lp-pretendido-resultado').style.display = 'flex';
+  };
+
+  window.toggleTodosComparables = (checked) => {
+    document.querySelectorAll('#comp-tbody input[type=checkbox]').forEach(chk => {
+      const id = Number(chk.value);
+      if (checked) {
+        if (!window._seleccionados.includes(id)) window._seleccionados.push(id);
+      } else {
+        window._seleccionados = window._seleccionados.filter(s => s !== id);
+      }
+      chk.checked = checked;
+      const row = document.getElementById(`comp-row-${id}`);
+      if (row) row.className = checked ? 'comp-selected' : '';
+    });
+    document.getElementById('comp-count').textContent = window._seleccionados.length;
   };
 
   window.toggleTodosRanking = (checked) => {
