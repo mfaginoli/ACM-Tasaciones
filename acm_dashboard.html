@@ -533,9 +533,9 @@
               <th>Viz.</th>
               <th>Precio</th>
               <th>Doc.</th>
-              <th>Sup. Total</th>
+              <th id="th-sup-total">Sup. Total</th>
               <th>Sup. Cub.</th>
-              <th>Sup. Desc.</th>
+              <th id="th-sup-desc">Sup. Desc.</th>
               <th>Tipo</th>
               <th>Ant.</th>
               <th>Dorm.</th>
@@ -1529,7 +1529,7 @@
         <td>${a.viz||'—'}</td>
         <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
         <td>${a.doc||'—'}</td>
-        <td>${a.supTotal||'—'} m²</td>
+        <td>${window._tasacionActual?.tipo==='casa_sin' ? (a.supTerreno||'—') : (a.supTotal||'—')} m²</td>
         <td>${a.supCub} m²</td>
         <td>${a.supDesc||'—'}</td>
         <td>${a.tipo||'—'}</td>
@@ -1570,6 +1570,7 @@
       ).join('');
       document.getElementById('ant-promedios').style.display = ants.length > 0 ? 'block' : 'none';
     }
+  };
 
   window.renderAntOrdenados = () => {
     const sorted = [...window._antecedentes].sort((a,b) => a.vm2 - b.vm2);
@@ -1594,7 +1595,6 @@
       </tr>`;
     }).join('');
     wrap.style.display = 'block';
-  };
   };
 
   // LIMPIAR FORM
@@ -1793,6 +1793,22 @@
     const thAmen   = document.getElementById('th-amenities');
     if (thBalTer) thBalTer.textContent = esCasa ? 'Sup. Terreno' : 'Balcón';
     if (thAmen)   thAmen.style.display  = esCasa ? 'none' : '';
+
+    // Tabla Op1 — cambiar encabezados según tipo
+    const thSupTotal = document.getElementById('th-sup-total');
+    const thSupDesc  = document.getElementById('th-sup-desc');
+    if (thSupTotal) thSupTotal.textContent = esCasa ? 'Sup. Terreno' : 'Sup. Total';
+    if (thSupDesc)  thSupDesc.textContent  = esCasa ? 'Sup. Desc./Patio' : 'Sup. Desc.';
+
+    // Form Op1 — cambiar label de sup total
+    const lblSupTotal = document.querySelector('label[for="f-sup-total"], #f-sup-total')?.previousElementSibling ||
+                        document.querySelector('label:has(+ #f-sup-total)');
+    const supTotalInput = document.getElementById('f-sup-total');
+    if (supTotalInput) {
+      const lbl = supTotalInput.closest('.form-field')?.querySelector('label');
+      if (lbl) lbl.textContent = esCasa ? 'Sup. Terreno (m²)' : 'Sup. Total (m²)';
+      supTotalInput.placeholder = esCasa ? '200' : '50';
+    }
   };
 
   window.construirTablaPonderacion = () => {
