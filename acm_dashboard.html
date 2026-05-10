@@ -532,40 +532,90 @@
       </div>
 
       <!-- MODAL IMPORTACIÓN EN LOTE -->
-      <div id="modal-importacion" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;overflow:auto">
-        <div style="background:white;margin:40px auto;max-width:900px;border-radius:4px;padding:32px">
+      <div id="modal-importacion" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;overflow:auto;padding:40px 20px">
+        <div style="background:white;margin:0 auto;max-width:960px;border-radius:4px;padding:32px">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
             <div style="font-family:'Cormorant Garamond',serif;font-size:22px;color:var(--verde)">Importar antecedentes en lote</div>
             <button onclick="document.getElementById('modal-importacion').style.display='none'" style="background:none;border:none;font-size:20px;cursor:pointer;color:var(--gris-texto)">✕</button>
           </div>
-          <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px">
-            Pegá los datos en la tabla. Cada fila es un antecedente. Podés editar cualquier celda antes de importar.
+
+          <!-- Tabs -->
+          <div style="display:flex;gap:0;margin-bottom:20px;border-bottom:2px solid var(--gris-borde)">
+            <button id="tab-archivo" onclick="switchImportTab('archivo')"
+              style="padding:8px 20px;border:none;background:var(--verde);color:white;font-size:12px;letter-spacing:1px;cursor:pointer;border-radius:2px 2px 0 0">
+              📁 SUBIR ARCHIVO
+            </button>
+            <button id="tab-manual" onclick="switchImportTab('manual')"
+              style="padding:8px 20px;border:none;background:var(--gris-fondo);color:var(--gris-texto);font-size:12px;letter-spacing:1px;cursor:pointer;border-radius:2px 2px 0 0">
+              ✏️ CARGA MANUAL
+            </button>
           </div>
-          <div style="overflow-x:auto;margin-bottom:16px">
-            <table id="import-table" style="border-collapse:collapse;width:100%;font-size:12px">
-              <thead>
-                <tr style="background:var(--verde);color:white">
-                  <th style="padding:8px 10px;white-space:nowrap">Barrio</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Dirección</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Precio USD</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Sup. Total</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Sup. Cub.</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Sup. Desc.</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Ant.</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Dorm.</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Baños</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Estado</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Días</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Viz.</th>
-                  <th style="padding:8px 10px;white-space:nowrap">Link</th>
-                </tr>
-              </thead>
-              <tbody id="import-tbody"></tbody>
-            </table>
+
+          <!-- Panel archivo -->
+          <div id="panel-archivo">
+            <div style="background:#F5F5F3;border:2px dashed var(--gris-borde);border-radius:4px;padding:32px;text-align:center;margin-bottom:20px">
+              <div style="font-size:32px;margin-bottom:8px">📄</div>
+              <div style="font-size:13px;color:var(--gris-texto);margin-bottom:16px">Subí un archivo <strong>CSV o JSON</strong> generado desde el chat</div>
+              <input type="file" id="import-file" accept=".csv,.json"
+                style="display:none" onchange="cargarArchivoImport(this)">
+              <button class="btn-agregar" onclick="document.getElementById('import-file').click()">
+                Seleccionar archivo
+              </button>
+            </div>
+            <div style="font-size:11px;color:var(--gris-texto);margin-bottom:16px">
+              💡 Pedile a Claude las capturas de tus antecedentes — te va a generar un archivo CSV listo para subir acá.
+            </div>
+            <!-- Preview del archivo -->
+            <div id="import-preview" style="display:none">
+              <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:8px">Vista previa — revisá antes de importar</div>
+              <div style="overflow-x:auto;margin-bottom:16px">
+                <table id="import-preview-table" style="border-collapse:collapse;width:100%;font-size:11px">
+                  <thead id="import-preview-thead"></thead>
+                  <tbody id="import-preview-tbody"></tbody>
+                </table>
+              </div>
+              <div style="display:flex;gap:12px">
+                <button class="btn-agregar" onclick="confirmarImportacionArchivo()">✓ Importar todos</button>
+                <button onclick="document.getElementById('import-preview').style.display='none';document.getElementById('import-file').value=''"
+                  style="background:none;border:1px solid var(--gris-borde);padding:8px 16px;cursor:pointer;border-radius:2px;font-size:12px">
+                  Cancelar
+                </button>
+              </div>
+            </div>
           </div>
-          <div style="display:flex;gap:12px">
-            <button class="btn-agregar" onclick="agregarFilaImport()">+ Agregar fila</button>
-            <button class="btn-op2" onclick="confirmarImportacion()" style="margin:0">✓ Importar todos</button>
+
+          <!-- Panel manual -->
+          <div id="panel-manual" style="display:none">
+            <div style="font-size:12px;color:var(--gris-texto);margin-bottom:16px">
+              Completá una fila por antecedente. Precio y Sup. Cubierta son obligatorios.
+            </div>
+            <div style="overflow-x:auto;margin-bottom:16px">
+              <table id="import-table" style="border-collapse:collapse;width:100%;font-size:11px">
+                <thead>
+                  <tr style="background:var(--verde);color:white">
+                    <th style="padding:7px 8px;white-space:nowrap">Barrio</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Dirección</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Precio USD</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Sup. Total/Terreno</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Sup. Cub.</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Sup. Desc.</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Ant.</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Dorm.</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Baños</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Estado</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Días</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Viz.</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Link</th>
+                    <th style="padding:7px 8px"></th>
+                  </tr>
+                </thead>
+                <tbody id="import-tbody"></tbody>
+              </table>
+            </div>
+            <div style="display:flex;gap:12px">
+              <button class="btn-agregar" onclick="agregarFilaImport()">+ Agregar fila</button>
+              <button class="btn-op2" onclick="confirmarImportacion()" style="margin:0">✓ Importar todos</button>
+            </div>
           </div>
         </div>
       </div>
@@ -694,8 +744,8 @@
               <th id="th-balcon-terreno">Balcón</th>
               <th>Ant.</th>
               <th>Dorm.</th>
-              <th>Disp.</th>
-              <th id="th-amenities">Amenities</th>
+              <th id="th-disp-col" class="th-solo-dpto">Disp.</th>
+              <th id="th-amenities" class="th-solo-dpto">Amenities</th>
               <th>Estado</th>
               <th>Días pub.</th>
               <th>V/m²</th>
@@ -1424,6 +1474,114 @@
     alert(`✓ ${nuevos.length} antecedente${nuevos.length>1?'s':''} importado${nuevos.length>1?'s':''}.`);
   };
 
+
+  // ── IMPORTACIÓN DESDE ARCHIVO ────────────────────────────────────────────
+  window.switchImportTab = (tab) => {
+    document.getElementById('panel-archivo').style.display = tab==='archivo' ? 'block' : 'none';
+    document.getElementById('panel-manual').style.display  = tab==='manual'  ? 'block' : 'none';
+    document.getElementById('tab-archivo').style.background = tab==='archivo' ? 'var(--verde)' : 'var(--gris-fondo)';
+    document.getElementById('tab-archivo').style.color      = tab==='archivo' ? 'white' : 'var(--gris-texto)';
+    document.getElementById('tab-manual').style.background  = tab==='manual'  ? 'var(--verde)' : 'var(--gris-fondo)';
+    document.getElementById('tab-manual').style.color       = tab==='manual'  ? 'white' : 'var(--gris-texto)';
+  };
+
+  window._importData = [];
+
+  window.cargarArchivoImport = (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      const text = e.target.result;
+      let data = [];
+      if (file.name.endsWith('.json')) {
+        try { data = JSON.parse(text); } catch(err) { alert('JSON inválido.'); return; }
+      } else {
+        // CSV
+        const lines = text.trim().split('\n');
+        const headers = lines[0].split(',').map(h => h.trim().replace(/"/g,'').toLowerCase());
+        data = lines.slice(1).map(line => {
+          const vals = line.split(',').map(v => v.trim().replace(/"/g,''));
+          const obj = {};
+          headers.forEach((h,i) => obj[h] = vals[i]||'');
+          return obj;
+        }).filter(r => r.precio || r['precio usd'] || r.supCub || r['sup. cub.']);
+      }
+      window._importData = data;
+      mostrarPreviewImport(data);
+    };
+    reader.readAsText(file);
+  };
+
+  const mostrarPreviewImport = (data) => {
+    if (!data.length) { alert('No se encontraron datos válidos.'); return; }
+    const cols = Object.keys(data[0]);
+    const thead = document.getElementById('import-preview-thead');
+    const tbody = document.getElementById('import-preview-tbody');
+    thead.innerHTML = '<tr style="background:var(--verde);color:white">' +
+      cols.map(c => `<th style="padding:6px 8px;white-space:nowrap;font-size:10px">${c}</th>`).join('') +
+      '</tr>';
+    tbody.innerHTML = data.map((row, i) => {
+      const bg = i%2===0?'white':'#F7F7F5';
+      return `<tr style="background:${bg}">` +
+        cols.map(c => `<td style="padding:5px 8px;border-bottom:1px solid #eee">
+          <input value="${row[c]||''}" onchange="window._importData[${i}]['${c}']=this.value"
+            style="border:none;background:transparent;width:100%;min-width:60px;font-size:11px">
+        </td>`).join('') +
+        '</tr>';
+    }).join('');
+    document.getElementById('import-preview').style.display = 'block';
+  };
+
+  // Mapeo de columnas del CSV a campos internos
+  const _mapCsvRow = (row) => {
+    const get = (...keys) => {
+      for (const k of keys) {
+        const val = row[k] || row[k.toLowerCase()] || row[k.toUpperCase()];
+        if (val !== undefined && val !== '') return val;
+      }
+      return null;
+    };
+    const precio  = parseFloat(get('precio','precio usd','Precio','Precio USD')) || 0;
+    const supCub  = parseFloat(get('supCub','sup. cub.','Sup. Cub.','sup_cub','cubierta')) || 0;
+    if (!precio || !supCub) return null;
+    return {
+      id: Date.now() + Math.random(),
+      barrio:    get('barrio','Barrio') || '',
+      direccion: get('direccion','dirección','Dirección','Direccion') || '',
+      precio,
+      supTotal:  parseFloat(get('supTotal','sup. total','Sup. Total','sup_total','terreno','Sup. Terreno')) || null,
+      supCub,
+      supDesc:   parseFloat(get('supDesc','sup. desc.','Sup. Desc.','descubierta')) || null,
+      ant:       parseInt(get('ant','antigüedad','Antigüedad','antiguedad')) ?? null,
+      dorm:      parseInt(get('dorm','dormitorios','Dormitorios')) || null,
+      ban:       parseInt(get('ban','baños','Baños','banos')) || null,
+      estado:    get('estado','Estado') || '',
+      estadoNum: parseInt(get('estadoNum','estado num','Estado Num')) || null,
+      dias:      parseInt(get('dias','días','Días','dias pub')) || null,
+      viz:       parseInt(get('viz','visualizaciones','Visualizaciones')) || null,
+      link:      get('link','Link') || '',
+      doc:       get('doc','documentación','Documentación') || null,
+      coch:      get('coch','cochera','Cochera') || 'No',
+      planta:    get('planta','disposición','Disposición') || null,
+      piso:      parseInt(get('piso','Piso')) || null,
+      vm2:       Math.round(precio / supCub),
+    };
+  };
+
+  window.confirmarImportacionArchivo = async () => {
+    const nuevos = window._importData.map(_mapCsvRow).filter(Boolean);
+    if (!nuevos.length) { alert('No hay datos válidos (precio y sup. cubierta son obligatorios).'); return; }
+    window._antecedentes = [...window._antecedentes, ...nuevos];
+    await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ antecedentes: window._antecedentes });
+    document.getElementById('modal-importacion').style.display = 'none';
+    document.getElementById('import-file').value = '';
+    document.getElementById('import-preview').style.display = 'none';
+    window._importData = [];
+    renderAntecedentes();
+    alert(`✓ ${nuevos.length} antecedente${nuevos.length>1?'s':''} importado${nuevos.length>1?'s':''}.`);
+  };
+
   window.cargarTasaciones = async () => {
     try {
       const snap = await getDocs(collection(db, 'tasaciones'));
@@ -1896,29 +2054,32 @@
       tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>';
       return;
     }
+    const tipo = window._tasacionActual?.tipo || 'dpto';
+    const esCasa = tipo === 'casa_sin';
     tbody.innerHTML = ants.map((a, i) => {
       const sel = window._seleccionados.includes(a.id);
-      // Color días publicado
       let diasColor = 'var(--negro)';
       if (a.dias >= 300) diasColor = 'var(--rojo)';
       else if (a.dias >= 150) diasColor = '#E8A020';
       else if (a.dias > 0 && a.dias <= 30) diasColor = 'var(--verde)';
+      const supTerr = a.supTotal ? `${a.supTotal} m²` : '—';
+      const estadoStr = a.estado ? `${a.estado}${a.estadoNum ? ` (${a.estadoNum}/10)` : ''}` : '—';
 
       return `<tr class="${sel ? 'comp-selected' : ''}" id="comp-row-${a.id}">
         <td style="text-align:center">
-          <input type="checkbox" class="checkbox-comp" ${sel ? 'checked' : ''}
+          <input type="checkbox" class="checkbox-comp" value="${a.id}" ${sel ? 'checked' : ''}
             onchange="toggleComp(${a.id}, this.checked)">
         </td>
         <td>${i+1}</td>
         <td>${a.direccion||'—'}</td>
         <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
         <td>${a.supCub} m²</td>
-        <td>${a.supDesc ? a.supDesc+' m²' : '—'}</td>
+        <td>${esCasa ? supTerr : (a.supDesc ? a.supDesc+' m²' : '—')}</td>
         <td>${a.ant != null ? (a.ant === 0 ? 'Estrenar' : a.ant+' años') : '—'}</td>
         <td>${a.dorm||'—'}</td>
-        <td>${a.planta||'—'}</td>
-        <td>${a.amenities||'—'}</td>
-        <td>${a.estado||'—'}</td>
+        ${esCasa ? '' : `<td>${a.planta||'—'}</td>`}
+        ${esCasa ? '' : `<td>${a.amenities||'—'}</td>`}
+        <td>${estadoStr}</td>
         <td style="color:${diasColor};font-weight:600">${a.dias||'—'}</td>
         <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
       </tr>`;
@@ -1999,8 +2160,13 @@
     // Tabla comparables Op2 — cambiar encabezados según tipo
     const thBalTer = document.getElementById('th-balcon-terreno');
     const thAmen   = document.getElementById('th-amenities');
+    const thDisp   = document.getElementById('th-disp-col');
     if (thBalTer) thBalTer.textContent = esCasa ? 'Sup. Terreno' : 'Balcón';
     if (thAmen)   thAmen.style.display  = esCasa ? 'none' : '';
+    if (thDisp)   thDisp.style.display  = esCasa ? 'none' : '';
+    // Actualizar colspan del empty state
+    const emptyTd = document.querySelector('#comp-tbody td[colspan]');
+    if (emptyTd) emptyTd.setAttribute('colspan', esCasa ? '11' : '13');
 
     // Tabla Op1 — cambiar encabezados según tipo
     const thSupTotal = document.getElementById('th-sup-total');
@@ -2773,14 +2939,16 @@
   };
 
   window.toggleTodosComparables = (checked) => {
-    document.querySelectorAll('#comp-tbody input[type=checkbox]').forEach(chk => {
-      const id = Number(chk.value);
+    // Recargar comparables desde antecedentes para asegurar IDs correctos
+    window._antecedentes.forEach(a => {
+      const id = a.id;
       if (checked) {
         if (!window._seleccionados.includes(id)) window._seleccionados.push(id);
       } else {
         window._seleccionados = window._seleccionados.filter(s => s !== id);
       }
-      chk.checked = checked;
+      const chk = document.querySelector(`#comp-tbody input[value="${id}"]`);
+      if (chk) chk.checked = checked;
       const row = document.getElementById(`comp-row-${id}`);
       if (row) row.className = checked ? 'comp-selected' : '';
     });
