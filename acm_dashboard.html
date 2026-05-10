@@ -1792,6 +1792,17 @@
       </tr>`;
     }).join('');
     wrap.style.display = 'block';
+    // Guardar orden en Firebase
+    if (window._currentTasacionId) {
+      const ordenData = sorted.map(a => ({
+        id: a.id, direccion: a.direccion, barrio: a.barrio,
+        precio: a.precio, supCub: a.supCub, dias: a.dias,
+        vm2: a.vm2, estado: a.estado
+      }));
+      updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
+        antecedentesOrdenados: ordenData
+      }).catch(e => console.error('Error guardando orden:', e));
+    }
   };
 
   // LIMPIAR FORM
@@ -2009,6 +2020,22 @@
   };
 
   window.construirTablaPonderacion = () => {
+    // Auto-guardar propiedad si hay datos en los campos
+    const supPropia = parseFloat(document.getElementById('p-sup-propia')?.value);
+    if (supPropia > 0 && window._currentTasacionId) {
+      const propiedad = {
+        barrio: document.getElementById('p-barrio')?.value?.trim() || window._tasacionActual?.barrio || '',
+        direccion: document.getElementById('p-direccion')?.value?.trim() || window._tasacionActual?.direccion || '',
+        precio: parseFloat(document.getElementById('p-precio')?.value) || null,
+        supPropia,
+        supBalcon: parseFloat(document.getElementById('p-sup-balcon')?.value) || null,
+        supTerreno: parseFloat(document.getElementById('p-sup-terreno')?.value) || null,
+        supJardin: parseFloat(document.getElementById('p-sup-jardin')?.value) || null,
+        supHom: parseFloat(document.getElementById('p-sup-hom')?.value) || null,
+      };
+      updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ propiedad })
+        .catch(e => console.error('Auto-save propiedad:', e));
+    }
     const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
     const table = document.getElementById('pond-table');
 
@@ -2608,6 +2635,11 @@
         document.getElementById('p-barrio').value    = tasacion.barrio    || '';
         document.getElementById('p-direccion').value = tasacion.direccion || '';
         document.getElementById('p-precio').value    = tasacion.precioSugerido || '';
+        // Para casas: intentar pre-cargar sup desde propiedad si existe
+        const supEl  = document.getElementById('p-sup-propia');
+        const terrEl = document.getElementById('p-sup-terreno');
+        if (supEl  && tasacion.cc_p_sup_cub)  supEl.value  = tasacion.cc_p_sup_cub;
+        if (terrEl && tasacion.cc_p_sup_t)    terrEl.value = tasacion.cc_p_sup_t;
       }
 
       renderComparables();
@@ -2752,7 +2784,13 @@
       const row = document.getElementById(`comp-row-${id}`);
       if (row) row.className = checked ? 'comp-selected' : '';
     });
-    document.getElementById('comp-count').textContent = window._seleccionados.length;
+    actualizarContadorComp();
+    if (window._seleccionados.length > 0) {
+      construirTablaPonderacion();
+      document.getElementById('pond-section').style.display = 'block';
+    } else {
+      document.getElementById('pond-section').style.display = 'none';
+    }
   };
 
   window.toggleTodosRanking = (checked) => {
