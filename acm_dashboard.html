@@ -1359,7 +1359,7 @@
         renderTerrenos();
       } else {
         renderAntecedentes();
-        showOp1();
+        showOp1(true);
       }
       cargarTasaciones();
     } catch(e) { console.error(e); }
@@ -2417,22 +2417,24 @@
     cargarTasaciones();
   };
 
-  window.showOp1 = () => {
+  window.showOp1 = (limpiar = false) => {
     document.getElementById('dashboard-screen').style.display = 'none';
     document.getElementById('op1-screen').style.display = 'block';
     document.getElementById('op2-screen').style.display = 'none';
     document.getElementById('lp-screen').style.display = 'none';
     document.getElementById('ranking-screen').style.display = 'none';
     adaptarFormularioPorTipo();
-    // Limpiar recuadros de resultados Op1 para que no queden datos de tasación anterior
-    const promDiv = document.getElementById('ant-promedios');
-    const ordWrap = document.getElementById('ant-ordenados-wrap');
-    if (promDiv) promDiv.style.display = 'none';
-    if (ordWrap) ordWrap.style.display = 'none';
-    const grid = document.getElementById('ant-promedios-grid');
-    if (grid) grid.innerHTML = '';
-    const tbody2 = document.getElementById('ant-tbody-ordenado');
-    if (tbody2) tbody2.innerHTML = '';
+    // Limpiar recuadros SOLO cuando se abre una tasación nueva desde el dashboard
+    if (limpiar) {
+      const promDiv = document.getElementById('ant-promedios');
+      const ordWrap = document.getElementById('ant-ordenados-wrap');
+      if (promDiv) promDiv.style.display = 'none';
+      if (ordWrap) ordWrap.style.display = 'none';
+      const grid = document.getElementById('ant-promedios-grid');
+      if (grid) grid.innerHTML = '';
+      const tbody2 = document.getElementById('ant-tbody-ordenado');
+      if (tbody2) tbody2.innerHTML = '';
+    }
   };
 
   // Enter en login
