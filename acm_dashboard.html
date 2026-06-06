@@ -328,6 +328,14 @@
       <input type="password" id="login-pass" placeholder="••••••••">
     </div>
     <button class="btn-primary" onclick="doLogin()">Ingresar</button>
+    <div style="text-align:center;margin-top:12px">
+      <button onclick="resetPassword()" style="background:none;border:none;color:var(--verde);font-size:12px;cursor:pointer;text-decoration:underline;letter-spacing:0.5px">
+        ¿Olvidaste tu contraseña?
+      </button>
+    </div>
+    <div id="reset-msg" style="display:none;margin-top:10px;font-size:12px;color:var(--verde);text-align:center;padding:8px;background:#E8F0EC;border-radius:2px">
+      ✓ Te enviamos un email para restablecer tu contraseña.
+    </div>
     <div class="login-error" id="login-error">Email o contraseña incorrectos.</div>
   </div>
 </div>
@@ -714,6 +722,25 @@
           <div class="form-field" id="p-jardín-wrap"><label>Jardín / patio (m²)</label><input type="number" id="p-sup-jardin" placeholder="0"></div>
           <div class="form-field" id="p-cochera-wrap"><label>Cochera</label><select id="p-cochera"><option value="No">No</option><option value="Sí">Sí</option></select></div>
         </div>
+        <div class="form-grid-3">
+          <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="p-ant" placeholder="0 = a estrenar"></div>
+          <div class="form-field">
+            <label>Estado <span style="font-size:9px;color:var(--gris-texto)">(etiqueta)</span></label>
+            <select id="p-estado">
+              <option value="">—</option>
+              <option value="A estrenar">A estrenar</option>
+              <option value="Excelente">Excelente</option>
+              <option value="Muy bueno">Muy bueno</option>
+              <option value="Bueno">Bueno</option>
+              <option value="Regular">Regular</option>
+              <option value="Malo">Malo</option>
+            </select>
+          </div>
+          <div class="form-field">
+            <label>Estado <span style="font-size:9px;color:var(--gris-texto)">(1–10)</span></label>
+            <input type="number" id="p-estado-num" min="1" max="10" placeholder="1–10">
+          </div>
+        </div>
         <div class="form-actions">
           <button class="btn-agregar" onclick="guardarPropiedad()">Guardar propiedad</button>
         </div>
@@ -869,8 +896,8 @@
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:12px;font-weight:500;">Precio pretendido por el propietario</div>
           <div style="display:flex;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:16px;">
             <div class="form-field" style="flex:0 0 200px">
-              <label>V/m² pretendido (USD)</label>
-              <input type="number" id="lp-pretendido" placeholder="Ej: 1100" step="25" oninput="calcularPretendido()">
+              <label>Precio pretendido por el propietario (USD total)</label>
+              <input type="number" id="lp-pretendido" placeholder="Ej: 42000" step="500" oninput="calcularPretendido()">
             </div>
           </div>
           <div id="lp-pretendido-resultado" style="display:none;display:flex;gap:12px;flex-wrap:wrap;">
@@ -1330,6 +1357,19 @@
   });
 
   // LOGIN
+  window.resetPassword = async () => {
+    const email = document.getElementById('login-email').value.trim();
+    if (!email) { alert('Ingresá tu email primero.'); return; }
+    try {
+      const { sendPasswordResetEmail } = await import('https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js');
+      await sendPasswordResetEmail(auth, email);
+      document.getElementById('reset-msg').style.display = 'block';
+      document.getElementById('login-error').style.display = 'none';
+    } catch(e) {
+      alert('Error al enviar el email. Verificá que el email sea correcto.');
+    }
+  };
+
   window.doLogin = async () => {
     const email = document.getElementById('login-email').value;
     const pass = document.getElementById('login-pass').value;
@@ -2038,6 +2078,9 @@
       supTerreno: parseFloat(document.getElementById('p-sup-terreno').value) || null,
       supJardin: parseFloat(document.getElementById('p-sup-jardin').value) || null,
       supHom: parseFloat(document.getElementById('p-sup-hom').value) || null,
+      ant: parseInt(document.getElementById('p-ant')?.value) || null,
+      estado: document.getElementById('p-estado')?.value || null,
+      estadoNum: parseInt(document.getElementById('p-estado-num')?.value) || null,
     };
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), { propiedad });
     const ind = document.getElementById('saving-indicator-2');
@@ -2795,6 +2838,12 @@
         if (balconEl)  balconEl.value  = p.supBalcon  || '';
         if (terrenoEl) terrenoEl.value = p.supTerreno || '';
         if (jardinEl)  jardinEl.value  = p.supJardin  || '';
+        const antEl    = document.getElementById('p-ant');
+        const estEl    = document.getElementById('p-estado');
+        const estNumEl = document.getElementById('p-estado-num');
+        if (antEl)    antEl.value    = p.ant       || '';
+        if (estEl)    estEl.value    = p.estado    || '';
+        if (estNumEl) estNumEl.value = p.estadoNum || '';
         calcularSupHom();
       } else {
         // Pre-cargar desde datos base de la tasación
@@ -2916,25 +2965,32 @@
   window.calcularPretendido = () => {
     const pretendido = parseFloat(document.getElementById('lp-pretendido').value);
     const celdas = window._rangos || [];
-    if (!pretendido || !celdas.length) return;
+    const sup = parseFloat(document.getElementById('lp-sup')?.value) || 0;
+    if (!pretendido || !celdas.length || !sup) {
+      if (!sup) alert('Ingresá la superficie cubierta de la propiedad primero.');
+      return;
+    }
 
-    // Techo zona de prueba = la celda de prueba con mayor vm2
+    // Precio total de cada zona = vm2 × sup
     const prueba = celdas.filter(c => c.zona === 'prueba');
     const venta  = celdas.filter(c => c.zona === 'venta');
-    const techoPrueba = prueba.length ? Math.max(...prueba.map(c => c.vm2||c.desde||0)) : 0;
-    const techoVenta  = venta.length  ? Math.max(...venta.map(c => c.vm2||c.desde||0))  : 0;
+    // Techo zona prueba = vm2 más alto de prueba × sup
+    const vm2TechoPrueba = prueba.length ? Math.max(...prueba.map(c => c.vm2||c.desde||0)) : 0;
+    const vm2PrimerVenta = venta.length  ? Math.max(...venta.map(c => c.vm2||c.desde||0))  : 0;
+    const precioPrueba = vm2TechoPrueba * sup;
+    const precioVenta  = vm2PrimerVenta  * sup;
 
-    const pctPrueba = techoPrueba > 0 ? (((pretendido - techoPrueba) / techoPrueba) * 100) : null;
-    const pctVenta  = techoVenta  > 0 ? (((pretendido - techoVenta)  / techoVenta)  * 100) : null;
+    const pctPrueba = precioPrueba > 0 ? (((pretendido - precioPrueba) / precioPrueba) * 100) : null;
+    const pctVenta  = precioVenta  > 0 ? (((pretendido - precioVenta)  / precioVenta)  * 100) : null;
 
-    const fmt = (pct) => {
-      if (pct === null) return '—';
+    const fmt = (pct, base) => {
+      if (pct === null || base === 0) return '—';
       const sign = pct >= 0 ? '+' : '';
-      return `${sign}${pct.toFixed(1)}%`;
+      return `${sign}${pct.toFixed(1)}% (USD ${Math.round(base).toLocaleString('es-AR')})`;
     };
 
-    document.getElementById('lp-pret-prueba-val').textContent = fmt(pctPrueba);
-    document.getElementById('lp-pret-venta-val').textContent  = fmt(pctVenta);
+    document.getElementById('lp-pret-prueba-val').textContent = fmt(pctPrueba, precioPrueba);
+    document.getElementById('lp-pret-venta-val').textContent  = fmt(pctVenta,  precioVenta);
     document.getElementById('lp-pretendido-resultado').style.display = 'flex';
   };
 
