@@ -212,6 +212,7 @@
   .badge-dpto { background: #EAF4EE; color: var(--verde); }
   .badge-casa { background: #FFF3DC; color: #B7770D; }
   .badge-lote { background: #EEF0FF; color: #3D52A0; }
+  .badge-local { background: #FFF0E8; color: #B85C00; }
   .badge-proceso { background: #FFF3DC; color: #B7770D; }
   .badge-completo { background: #EAF4EE; color: var(--verde); }
   .btn-ver { background: none; border: 1px solid var(--gris-borde); padding: 5px 12px; border-radius: 2px; font-size: 11px; color: var(--gris-texto); cursor: pointer; transition: all 0.15s; font-family: 'DM Sans', sans-serif; }
@@ -241,7 +242,7 @@
   .modal-sub { font-size: 13px; color: var(--gris-texto); margin-bottom: 28px; }
   .modal-section { margin-bottom: 20px; }
   .modal-section-title { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; color: var(--gris-texto); margin-bottom: 12px; font-weight: 500; }
-  .tipo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .tipo-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
   .tipo-card {
     border: 2px solid var(--gris-borde);
     border-radius: 2px; padding: 16px;
@@ -471,7 +472,7 @@
         <div class="form-grid-4" style="margin-bottom:10px" id="f-tipo-wrap">
           <div class="form-field" id="f-sup-semi-wrap"><label>Sup. Semicubierta (m²)</label><input type="number" id="f-sup-semi" placeholder="0"></div>
           <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0 = a estrenar"></div>
-          <div class="form-field"><label>Dormitorios</label><input type="number" id="f-dorm" placeholder="1"></div>
+          <div class="form-field" id="f-dorm-wrap"><label>Dormitorios</label><input type="number" id="f-dorm" placeholder="1"></div>
           <div class="form-field"><label>Baños</label><input type="number" id="f-ban" placeholder="1"></div>
         </div>
 
@@ -1285,6 +1286,11 @@
           <div class="tipo-name">Lote</div>
           <div class="tipo-desc">Solo suelo</div>
         </div>
+        <div class="tipo-card" onclick="selectTipo('local')" id="tipo-local">
+          <div class="tipo-icon">🏪</div>
+          <div class="tipo-name">Local / Galpón</div>
+          <div class="tipo-desc">Comparable directo</div>
+        </div>
       </div>
     </div>
 
@@ -1317,7 +1323,7 @@
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.11.0/firebase-app.js";
   import { getAuth, signInWithEmailAndPassword, signOut, onAuthStateChanged }
     from "https://www.gstatic.com/firebasejs/10.11.0/firebase-auth.js";
-  import { getFirestore, collection, addDoc, getDocs, doc, updateDoc, deleteDoc, arrayUnion, query, where, orderBy, serverTimestamp }
+  import { getFirestore, collection, addDoc, getDocs, getDoc, doc, updateDoc, deleteDoc, arrayUnion, query, where, orderBy, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.11.0/firebase-firestore.js";
 
   const firebaseConfig = {
@@ -1648,8 +1654,8 @@
       }
 
       tbody.innerHTML = tasaciones.map(t => {
-        const tipo = { dpto:'Departamento', casa_sin:'Casa s/terreno', casa_con:'Casa c/terreno', lote:'Lote' }[t.tipo] || t.tipo;
-        const badgeTipo = { dpto:'badge-dpto', casa_sin:'badge-casa', casa_con:'badge-casa', lote:'badge-lote' }[t.tipo] || '';
+        const tipo = { dpto:'Departamento', casa_sin:'Casa s/terreno', casa_con:'Casa c/terreno', lote:'Lote', local:'Local / Galpón' }[t.tipo] || t.tipo;
+        const badgeTipo = { dpto:'badge-dpto', casa_sin:'badge-casa', casa_con:'badge-casa', lote:'badge-lote', local:'badge-local' }[t.tipo] || '';
         const badgeEst = t.estado === 'Completada' ? 'badge-completo' : 'badge-proceso';
         const fecha = t.fecha || '—';
         // precioSugerido puede ser número o string con "USD ..."
@@ -1725,16 +1731,15 @@
   window.abrirTasacion = async (id) => {
     window._currentTasacionId = id;
     try {
-      const snap = await getDocs(collection(db, 'tasaciones'));
-      let tasacion = null;
-      snap.forEach(d => { if(d.id === id) tasacion = { id:d.id, ...d.data() }; });
-      if (!tasacion) return;
+      const snap = await getDoc(doc(db, 'tasaciones', id));
+      if (!snap.exists()) return;
+      const tasacion = { id: snap.id, ...snap.data() };
 
       window._tasacionActual = tasacion;
       window._antecedentes = tasacion.antecedentes || [];
       document.getElementById('op1-tasacion-info').textContent =
         (() => {
-        const tipos = { dpto:'Departamento', casa_sin:'Casa s/terreno', casa_con:'Casa c/terreno', lote:'Lote' };
+        const tipos = { dpto:'Departamento', casa_sin:'Casa s/terreno', casa_con:'Casa c/terreno', lote:'Lote', local:'Local / Galpón' };
         return `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tipos[tasacion.tipo]||tasacion.tipo}`;
       })();
 
@@ -2164,68 +2169,72 @@
     'Antigüedad (const.)', 'Calidad (const.)', 'Conservación (const.)', 'Deseabilidad (const.)', 'T. Publicación (const.)'
   ];
 
+  const FACTORES_LOCAL = [
+    'Ubicación', 'Superficie', 'Antigüedad', 'Estado general',
+    'Frente / Visibilidad', 'Estacionamiento', 'Tiempo en mercado', 'Revalorización'
+  ];
+
   const FACTORES = () => {
     const tipo = window._tasacionActual?.tipo || 'dpto';
-    return tipo === 'casa_sin' ? FACTORES_CASA_SIN : FACTORES_DPTO;
+    if (tipo === 'casa_sin') return FACTORES_CASA_SIN;
+    if (tipo === 'local')    return FACTORES_LOCAL;
+    return FACTORES_DPTO;
   };
 
 
   // ── ADAPTAR FORMULARIO SEGÚN TIPO ────────────────────────────────────────
   window.adaptarFormularioPorTipo = () => {
     const tipo = window._tasacionActual?.tipo || 'dpto';
-    const esCasa = tipo === 'casa_sin';
+    const esCasa  = tipo === 'casa_sin';
+    const esLocal = tipo === 'local';
 
     // Op1 — mostrar/ocultar campos según tipo
-    const supTerrenoWrap = document.getElementById('f-sup-terreno-wrap');
-    const supDescWrap    = document.getElementById('f-sup-desc-wrap');
-    const tipoWrap       = document.getElementById('f-tipo-wrap');
-    const supSemiWrap    = document.getElementById('f-sup-semi-wrap');
-    const supDescLbl     = document.getElementById('f-sup-desc-lbl');
+    const supSemiWrap = document.getElementById('f-sup-semi-wrap');
+    const supDescLbl  = document.getElementById('f-sup-desc-lbl');
+    const dormWrap    = document.getElementById('f-dorm-wrap');
 
-    if (supTerrenoWrap) supTerrenoWrap.style.display = esCasa ? '' : 'none';
-    if (supSemiWrap)    supSemiWrap.style.display    = esCasa ? '' : 'none';
-    if (supDescLbl && esCasa) supDescLbl.textContent = 'Sup. Descubierta / Patio (m²)';
-    if (supDescLbl && !esCasa) supDescLbl.textContent = 'Sup. Descubierta (m²)';
+    if (supSemiWrap) supSemiWrap.style.display = esCasa ? '' : 'none';
+    if (dormWrap)    dormWrap.style.display    = (esCasa || esLocal) ? 'none' : '';
+    if (supDescLbl)  supDescLbl.textContent    = esCasa ? 'Sup. Descubierta / Patio (m²)' : 'Sup. Descubierta (m²)';
 
-    // Op2 — mostrar/ocultar campos propiedad
-    const balconWrap   = document.getElementById('p-sup-balcon-wrap');
-    const terrenoWrap  = document.getElementById('p-sup-terreno-wrap');
-    const jardinWrap   = document.getElementById('p-jardín-wrap');
-    const cocheraWrap  = document.getElementById('p-cochera-wrap');
-    const lblSupPropia = document.getElementById('lbl-sup-propia');
-
-    if (balconWrap)  balconWrap.style.display  = esCasa ? 'none' : '';
-    if (terrenoWrap) terrenoWrap.style.display = esCasa ? '' : 'none';
-    if (jardinWrap)  jardinWrap.style.display  = esCasa ? '' : 'none';
-    if (cocheraWrap) cocheraWrap.style.display = esCasa ? '' : 'none';
-    if (lblSupPropia) lblSupPropia.textContent = esCasa ? 'Sup. cubierta (m²)' : 'Sup. propia (m²)';
-
-    // Tabla comparables Op2 — cambiar encabezados según tipo
-    const thBalTer = document.getElementById('th-balcon-terreno');
-    const thAmen   = document.getElementById('th-amenities');
-    const thDisp   = document.getElementById('th-disp-col');
-    if (thBalTer) thBalTer.textContent = esCasa ? 'Sup. Terreno' : 'Balcón';
-    if (thAmen)   thAmen.style.display  = esCasa ? 'none' : '';
-    if (thDisp)   thDisp.style.display  = esCasa ? 'none' : '';
-    // Actualizar colspan del empty state
-    const emptyTd = document.querySelector('#comp-tbody td[colspan]');
-    if (emptyTd) emptyTd.setAttribute('colspan', esCasa ? '11' : '13');
-
-    // Tabla Op1 — cambiar encabezados según tipo
-    const thSupTotal = document.getElementById('th-sup-total');
-    const thSupDesc  = document.getElementById('th-sup-desc');
-    if (thSupTotal) thSupTotal.textContent = esCasa ? 'Sup. Terreno' : 'Sup. Total';
-    if (thSupDesc)  thSupDesc.textContent  = esCasa ? 'Sup. Desc./Patio' : 'Sup. Desc.';
-
-    // Form Op1 — cambiar label de sup total
-    const lblSupTotal = document.querySelector('label[for="f-sup-total"], #f-sup-total')?.previousElementSibling ||
-                        document.querySelector('label:has(+ #f-sup-total)');
+    // Op1 — sup total label
     const supTotalInput = document.getElementById('f-sup-total');
     if (supTotalInput) {
       const lbl = supTotalInput.closest('.form-field')?.querySelector('label');
       if (lbl) lbl.textContent = esCasa ? 'Sup. Terreno (m²)' : 'Sup. Total (m²)';
       supTotalInput.placeholder = esCasa ? '200' : '50';
     }
+
+    // Op2 — campos propiedad
+    const balconWrap   = document.getElementById('p-sup-balcon-wrap');
+    const terrenoWrap  = document.getElementById('p-sup-terreno-wrap');
+    const jardinWrap   = document.getElementById('p-jardín-wrap');
+    const cocheraWrap  = document.getElementById('p-cochera-wrap');
+    const lblSupPropia = document.getElementById('lbl-sup-propia');
+
+    if (balconWrap)  balconWrap.style.display  = (esCasa || esLocal) ? 'none' : '';
+    if (terrenoWrap) terrenoWrap.style.display = esCasa ? '' : 'none';
+    if (jardinWrap)  jardinWrap.style.display  = esCasa ? '' : 'none';
+    if (cocheraWrap) cocheraWrap.style.display = esCasa ? '' : 'none';
+    if (lblSupPropia) lblSupPropia.textContent = esCasa ? 'Sup. cubierta (m²)' : 'Sup. cubierta (m²)';
+
+    // Tabla comparables Op2 — encabezados según tipo
+    const thBalTer = document.getElementById('th-balcon-terreno');
+    const thAmen   = document.getElementById('th-amenities');
+    const thDisp   = document.getElementById('th-disp-col');
+    if (thBalTer) thBalTer.textContent     = esCasa ? 'Sup. Terreno' : 'Balcón';
+    if (thAmen)   thAmen.style.display     = (esCasa || esLocal) ? 'none' : '';
+    if (thDisp)   thDisp.style.display     = (esCasa || esLocal) ? 'none' : '';
+
+    const emptyTd = document.querySelector('#comp-tbody td[colspan]');
+    const compCols = (esCasa || esLocal) ? '11' : '13';
+    if (emptyTd) emptyTd.setAttribute('colspan', compCols);
+
+    // Tabla Op1 — encabezados
+    const thSupTotal = document.getElementById('th-sup-total');
+    const thSupDesc  = document.getElementById('th-sup-desc');
+    if (thSupTotal) thSupTotal.textContent = esCasa ? 'Sup. Terreno' : 'Sup. Total';
+    if (thSupDesc)  thSupDesc.textContent  = esCasa ? 'Sup. Desc./Patio' : 'Sup. Desc.';
   };
 
   window.construirTablaPonderacion = () => {
@@ -2387,10 +2396,9 @@
 
     // Recargar tasación
     try {
-      const snap = await getDocs(collection(db, 'tasaciones'));
-      let tasacion = null;
-      snap.forEach(d => { if(d.id === window._currentTasacionId) tasacion = { id:d.id, ...d.data() }; });
-      if (!tasacion) return;
+      const snap = await getDoc(doc(db, 'tasaciones', window._currentTasacionId));
+      if (!snap.exists()) return;
+      const tasacion = { id: snap.id, ...snap.data() };
       window._tasacionActual = tasacion;
       window._antecedentes = tasacion.antecedentes || [];
     } catch(e) { console.error(e); }
@@ -2755,9 +2763,8 @@
     if (!window._currentTasacionId) return;
     const { selIds, rankingFinal } = _getRankingData();
     // Leer estado actual directo desde Firebase para no pisar Completada
-    const snap2 = await getDocs(collection(db, 'tasaciones'));
-    let estadoActual = 'En proceso';
-    snap2.forEach(d => { if (d.id === window._currentTasacionId) estadoActual = d.data().estado || 'En proceso'; });
+    const snap2 = await getDoc(doc(db, 'tasaciones', window._currentTasacionId));
+    const estadoActual = snap2.exists() ? (snap2.data().estado || 'En proceso') : 'En proceso';
     await updateDoc(doc(db, 'tasaciones', window._currentTasacionId), {
       rankingGenerado: true,
       rankingSeleccionados: selIds,
@@ -2804,18 +2811,18 @@
 
     // Recargar tasación desde Firebase para tener datos frescos
     try {
-      const snap = await getDocs(collection(db, 'tasaciones'));
-      let tasacion = null;
-      snap.forEach(d => { if(d.id === window._currentTasacionId) tasacion = { id:d.id, ...d.data() }; });
-      if (!tasacion) return;
+      const snap = await getDoc(doc(db, 'tasaciones', window._currentTasacionId));
+      if (!snap.exists()) return;
+      const tasacion = { id: snap.id, ...snap.data() };
 
       window._tasacionActual = tasacion;
       window._antecedentes = tasacion.antecedentes || [];
       window._seleccionados = tasacion.comparablesSeleccionados || [];
 
       // Info header
+      const _tiposLabel = { dpto:'Departamento', casa_sin:'Casa s/terreno', lote:'Lote', local:'Local / Galpón' };
       document.getElementById('op2-tasacion-info').textContent =
-        `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${tasacion.tipo === 'dpto' ? 'Departamento' : tasacion.tipo}`;
+        `${tasacion.cliente} · ${tasacion.direccion}, ${tasacion.barrio} · ${_tiposLabel[tasacion.tipo]||tasacion.tipo}`;
 
       // Adaptar formulario según tipo antes de cargar datos
       adaptarFormularioPorTipo();
@@ -2945,10 +2952,9 @@
 
   window.generarPDFDesdeDashboard = async (id) => {
     try {
-      const snap = await getDocs(collection(db, 'tasaciones'));
-      let tasacion = null;
-      snap.forEach(d => { if (d.id === id) tasacion = { id: d.id, ...d.data() }; });
-      if (!tasacion) { alert('No se encontró la tasación.'); return; }
+      const snap = await getDoc(doc(db, 'tasaciones', id));
+      if (!snap.exists()) { alert('No se encontró la tasación.'); return; }
+      const tasacion = { id: snap.id, ...snap.data() };
       window._tasacionActual = tasacion;
       window._antecedentes = tasacion.antecedentes || [];
       window._precioSugeridoLP = tasacion.precioSugerido || null;
@@ -3431,7 +3437,7 @@
       py+=7;
 
       // Rows factores
-      FACTORES().forEach((f,fi)=>{
+      FACTORES.forEach((f,fi)=>{
         const bg = fi%2===0?[255,255,255]:[245,245,243];
         doc.setFillColor(...bg); doc.rect(14,py,269,6,'F');
         doc.setTextColor(...CNg); doc.setFont('helvetica','normal'); doc.setFontSize(6.5);
