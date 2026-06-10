@@ -1975,7 +1975,7 @@
       { label: 'Visualizaciones promedio',  val: prom(ants.map(a=>parseInt(a.viz)).filter(v=>v>0)),        fmt: v => v.toLocaleString('es-AR') },
       { label: 'Antigüedad promedio',       val: prom(ants.map(a=>parseInt(a.ant)).filter(v=>v>=0)),       fmt: v => `${v} años` },
       { label: 'Sup. cubierta promedio',    val: prom(ants.map(a=>parseFloat(a.supCub)).filter(v=>v>0)),   fmt: v => `${v} m²` },
-      ...(tipo === 'casa_sin' ? [{ label: 'Sup. terreno promedio', val: prom(ants.map(a=>parseFloat(a.supTotal)).filter(v=>v>0)), fmt: v => `${v} m²` }] : []),
+      { label: 'Sup. terreno promedio',     val: prom(ants.map(a=>parseFloat(a.supTotal)).filter(v=>v>0)),   fmt: v => `${v} m²` },
     ];
     const grid = document.getElementById('ant-promedios-grid');
     if (grid) {
