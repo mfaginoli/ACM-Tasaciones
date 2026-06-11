@@ -906,8 +906,12 @@
         <div id="lp-zonas-grid" style="display:flex;gap:3px;margin-bottom:20px;flex-wrap:wrap"></div>
         <div id="lp-precio-sugerido-box" style="background:var(--verde-claro);border:2px solid var(--verde);border-radius:2px;padding:20px 28px;display:inline-block">
           <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:6px">Precio sugerido de publicación</div>
-          <div id="lp-precio-sugerido" style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--verde)">—</div>
-          <div id="lp-precio-rango" style="font-size:11px;color:var(--gris-texto);margin-top:4px">Techo zona de prueba</div>
+          <div style="display:flex;align-items:baseline;gap:8px">
+            <span style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:300;color:var(--verde)">USD</span>
+            <input type="number" id="lp-precio-sugerido" step="100" oninput="window._precioSugeridoLP = parseFloat(this.value)||0"
+              style="font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:300;color:var(--verde);border:none;border-bottom:1px solid var(--verde);background:transparent;width:160px;outline:none">
+          </div>
+          <div id="lp-precio-rango" style="font-size:11px;color:var(--gris-texto);margin-top:4px">Promedio zona de prueba</div>
         </div>
         <!-- PRECIO PRETENDIDO -->
         <div style="margin-top:20px;background:#F5F5F3;border:1px solid var(--gris-borde);border-radius:2px;padding:16px 20px;">
@@ -2439,6 +2443,13 @@
     else lpRef.value = '';
     if (t?.lpRangoSize) lpRango.value = t.lpRangoSize;
     calcularRangos();
+
+    // Restaurar precio sugerido guardado (puede haber sido editado manualmente)
+    if (t?.precioSugerido) {
+      const inp = document.getElementById('lp-precio-sugerido');
+      if (inp) inp.value = Math.round(t.precioSugerido);
+      window._precioSugeridoLP = t.precioSugerido;
+    }
   };
 
   // Tabla del muestreo: rangos fijos de antecedentes con cant. y dias promedio
@@ -2587,10 +2598,12 @@
       })() + '</div>'
 
     if (sup > 0) {
-      const precioSug = Math.round(REF * sup);
-      document.getElementById('lp-precio-sugerido').textContent = `USD ${precioSug.toLocaleString('es-AR')}`;
+      // Promedio entre los dos valores de la zona de prueba (REF-R y REF)
+      const vm2Prom = REF - (R/2);
+      const precioSug = Math.round(vm2Prom * sup);
+      document.getElementById('lp-precio-sugerido').value = precioSug;
       document.getElementById('lp-precio-rango').textContent =
-        `USD ${REF.toLocaleString('es-AR')}/m² × ${sup} m² — Techo zona de prueba`;
+        `USD ${vm2Prom.toLocaleString('es-AR')}/m² (prom. zona de prueba) × ${sup} m²`;
       window._precioSugeridoLP = precioSug;
     }
     document.getElementById('lp-zonas').style.display = 'block';
