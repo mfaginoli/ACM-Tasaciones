@@ -2443,13 +2443,6 @@
     else lpRef.value = '';
     if (t?.lpRangoSize) lpRango.value = t.lpRangoSize;
     calcularRangos();
-
-    // Restaurar precio sugerido guardado (puede haber sido editado manualmente)
-    if (t?.precioSugerido) {
-      const inp = document.getElementById('lp-precio-sugerido');
-      if (inp) inp.value = Math.round(t.precioSugerido);
-      window._precioSugeridoLP = t.precioSugerido;
-    }
   };
 
   // Tabla del muestreo: rangos fijos de antecedentes con cant. y dias promedio
