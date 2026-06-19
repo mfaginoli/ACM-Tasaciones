@@ -2282,7 +2282,7 @@
       updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ propiedad })
         .catch(e => console.error('Auto-save propiedad:', e));
     }
-    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
+    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id)).sort((a,b) => (a.vm2||0) - (b.vm2||0));
     const table = document.getElementById('pond-table');
 
     // Header
@@ -2329,7 +2329,7 @@
 
   // CALCULAR PONDERACIÓN
   window.calcularPonderacion = () => {
-    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
+    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id)).sort((a,b) => (a.vm2||0) - (b.vm2||0));
     let vuTotal = 0;
 
     comps.forEach((c, ci) => {
@@ -2364,7 +2364,7 @@
 
   // Extraer valores de factores de la tabla de ponderación
   const _extraerFactores = () => {
-    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id));
+    const comps = window._antecedentes.filter(a => window._seleccionados.includes(a.id)).sort((a,b) => (a.vm2||0) - (b.vm2||0));
     const factoresGuardados = [];
     comps.forEach((c, ci) => {
       const row = {};
