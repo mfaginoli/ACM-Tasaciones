@@ -1758,6 +1758,7 @@
 
       window._tasacionActual = tasacion;
       window._antecedentes = tasacion.antecedentes || [];
+      window._seleccionados  = tasacion.comparablesSeleccionados || [];
       document.getElementById('op1-tasacion-info').textContent =
         (() => {
         const tipos = { dpto:'Departamento', casa_sin:'Casa s/terreno', casa_con:'Casa c/terreno', lote:'Lote', local:'Local / Galpón' };
