@@ -299,7 +299,19 @@
   .btn-del:hover { color: var(--rojo); }
   .saving-indicator { font-size: 11px; color: var(--verde); display: none; }
 
-  .pond-factor { font-size:11px; font-weight:500; color:var(--negro); padding:8px 12px; white-space:nowrap; background:var(--gris-fondo); border-bottom:1px solid var(--gris-claro); }
+  .pond-factor { font-size:11px; font-weight:500; color:var(--negro); padding:8px 12px; white-space:nowrap; background:var(--gris-fondo); border-bottom:1px solid var(--gris-claro); position:sticky; left:0; z-index:2; box-shadow:2px 0 4px rgba(0,0,0,0.06); }
+  .sidebar.collapsed { width:48px; }
+  .sidebar.collapsed .sidebar-logo-name,
+  .sidebar.collapsed .sidebar-logo-sub,
+  .sidebar.collapsed .nav-item span:last-child,
+  .sidebar.collapsed .sidebar-user .user-info,
+  .sidebar.collapsed .sidebar-user .btn-logout { display:none; }
+  .sidebar.collapsed .nav-item { padding:12px 0; justify-content:center; }
+  .sidebar.collapsed .sidebar-logo { padding:14px 0; display:flex; justify-content:center; }
+  .sidebar.collapsed .sidebar-user { justify-content:center; padding:16px 0; }
+  .main.collapsed { margin-left:48px; }
+  .sidebar-toggle { position:absolute; bottom:60px; right:-12px; width:24px; height:24px; background:var(--verde); border:2px solid var(--blanco); border-radius:50%; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:10px; color:var(--blanco); z-index:101; transition:transform 0.2s; }
+  .sidebar.collapsed .sidebar-toggle { transform:rotate(180deg); }
   .pond-input { width:70px; padding:6px 8px; border:1px solid var(--gris-borde); border-radius:2px; font-size:12px; text-align:center; font-family:'DM Sans',sans-serif; }
   .pond-input:focus { outline:none; border-color:var(--verde); }
   .pond-result { font-size:12px; font-weight:600; color:var(--verde); text-align:center; padding:8px 12px; }
@@ -343,7 +355,8 @@
 <!-- ══════════ APP ══════════ -->
 <div id="app">
   <!-- SIDEBAR -->
-  <aside class="sidebar">
+  <aside class="sidebar" id="main-sidebar">
+    <div class="sidebar-toggle" onclick="toggleSidebar()" title="Contraer/expandir">‹</div>
     <div class="sidebar-logo">
       <div class="sidebar-logo-name">ACM Sistema</div>
       <div class="sidebar-logo-sub">Tasaciones · Córdoba</div>
@@ -1367,6 +1380,13 @@
   window._currentTasacionId = null;
   window._antecedentes = [];
   window._tipoSeleccionado = 'dpto';
+
+  window.toggleSidebar = () => {
+    const sb = document.getElementById('main-sidebar');
+    const main = document.querySelector('.main');
+    sb.classList.toggle('collapsed');
+    main.classList.toggle('collapsed');
+  };
 
   // Auth state
   onAuthStateChanged(auth, (user) => {
