@@ -794,6 +794,7 @@
               <th>Estado</th>
               <th>Días pub.</th>
               <th>V/m²</th>
+              <th>Link</th>
             </tr>
           </thead>
           <tbody id="comp-tbody"></tbody>
@@ -2123,9 +2124,9 @@
   window._seleccionados = [];
   window.renderComparables = () => {
     const tbody = document.getElementById('comp-tbody');
-    const ants = window._antecedentes;
+    const ants = [...window._antecedentes].sort((a, b) => (a.vm2||0) - (b.vm2||0));
     if (!ants.length) {
-      tbody.innerHTML = '<tr><td colspan="13"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>';
+      tbody.innerHTML = '<tr><td colspan="14"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>';
       return;
     }
     const tipo = window._tasacionActual?.tipo || 'dpto';
@@ -2156,6 +2157,7 @@
         <td>${estadoStr}</td>
         <td style="color:${diasColor};font-weight:600">${a.dias||'—'}</td>
         <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
+        <td style="text-align:center">${a.link ? `<a href="${a.link}" target="_blank" style="color:var(--verde);font-size:11px;text-decoration:none" title="${a.link}">Ver →</a>` : '—'}</td>
       </tr>`;
     }).join('');
     actualizarContadorComp();
