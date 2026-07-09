@@ -1014,7 +1014,11 @@
           <div class="page-title">Casa c/Terreno — <span>Op. 1A: Antecedentes de Terrenos</span></div>
           <div class="page-sub" id="cc-info">Cargando...</div>
         </div>
-        <button class="btn-op2" onclick="showCC_Op1B()">Ir a Op. 1B — Casas →</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-op2" onclick="mostrarImportCC('terreno')" style="background:#3D7A5E">📋 Importar CSV</button>
+          <input type="file" id="cc-import-file-t" accept=".csv" style="display:none" onchange="importarCSV_Terrenos(this)">
+          <button class="btn-op2" onclick="showCC_Op1B()">Ir a Op. 1B — Casas →</button>
+        </div>
       </div>
 
       <!-- Formulario terrenos -->
@@ -1072,7 +1076,11 @@
           <div class="page-title">Casa c/Terreno — <span>Op. 1B: Antecedentes de Casas</span></div>
           <div class="page-sub" id="cc-info-b">Cargando...</div>
         </div>
-        <button class="btn-op2" onclick="showCC_Op2()">Ir a Op. 2 — Valoración →</button>
+        <div style="display:flex;gap:8px">
+          <button class="btn-op2" onclick="mostrarImportCC('casa')" style="background:#3D7A5E">📋 Importar CSV</button>
+          <input type="file" id="cc-import-file-c" accept=".csv" style="display:none" onchange="importarCSV_Casas(this)">
+          <button class="btn-op2" onclick="showCC_Op2()">Ir a Op. 2 — Valoración →</button>
+        </div>
       </div>
 
       <!-- Formulario casas -->
@@ -3709,6 +3717,99 @@ ${allSlides}
     window._cc_casas = window._cc_casas.filter(c=>c.id!==id);
     await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas });
     renderCasas();
+  };
+
+  // ─── IMPORTACIÓN CSV CASA_CON ───────────────────────────────────────────
+  window.mostrarImportCC = (tipo) => {
+    const inputId = tipo === 'terreno' ? 'cc-import-file-t' : 'cc-import-file-c';
+    document.getElementById(inputId).click();
+  };
+
+  window.importarCSV_Terrenos = async (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) { alert('El CSV no tiene datos.'); return; }
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+    const get = (row, name) => {
+      const i = headers.indexOf(name);
+      return i >= 0 ? row[i]?.trim() : '';
+    };
+    let importados = 0;
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(',');
+      const dir   = get(row, 'dir') || get(row, 'direccion');
+      const precio = parseFloat(get(row, 'precio'));
+      const sup    = parseFloat(get(row, 'sup') || get(row, 'suptotal') || get(row, 'sup_total'));
+      const fot    = parseFloat(get(row, 'fot')) || 1;
+      const dias   = parseInt(get(row, 'dias')) || null;
+      const link   = get(row, 'link');
+      if (!dir || !precio || !sup) continue;
+      const incid  = precio / sup;
+      const fprime = 1;
+      const iCorr  = incid;
+      const vSuelo = sup * fot * iCorr;
+      const terreno = { id: Date.now() + i, dir, precio, sup, fot, dias, link,
+        f1:1, f2:1, f3:1, f4:1, f5:1, fprime, incid, iCorr, vSuelo };
+      window._cc_terrenos.push(terreno);
+      importados++;
+    }
+    if (!importados) { alert('No se encontraron filas válidas (dir, precio y sup son obligatorios).'); input.value=''; return; }
+    await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_terrenos: window._cc_terrenos });
+    renderTerrenos();
+    input.value = '';
+    alert(`✓ ${importados} terreno${importados>1?'s':''} importado${importados>1?'s':''}.`);
+  };
+
+  window.importarCSV_Casas = async (input) => {
+    const file = input.files[0];
+    if (!file) return;
+    const text = await file.text();
+    const lines = text.trim().split('\n');
+    if (lines.length < 2) { alert('El CSV no tiene datos.'); return; }
+    const headers = lines[0].split(',').map(h => h.trim().toLowerCase().replace(/[\s\.\/]/g,''));
+    const get = (row, ...names) => {
+      for (const name of names) {
+        const i = headers.indexOf(name);
+        if (i >= 0 && row[i]?.trim()) return row[i].trim();
+      }
+      return '';
+    };
+    let importados = 0;
+    const vm2Suelo = window._cc_vm2_suelo || 0;
+    for (let i = 1; i < lines.length; i++) {
+      const row = lines[i].split(',');
+      const dir    = get(row, 'dir', 'direccion');
+      const precio = parseFloat(get(row, 'precio'));
+      const supT   = parseFloat(get(row, 'supt', 'suptotal', 'supt'));
+      const supCub = parseFloat(get(row, 'supcub', 'supcubierta', 'supcub'));
+      const supSemi= parseFloat(get(row, 'supsemi', 'supsemicubierta')) || 0;
+      const fot    = parseFloat(get(row, 'fot')) || 1;
+      const ant    = parseFloat(get(row, 'ant', 'antiguedad')) || 0;
+      const dias   = parseInt(get(row, 'dias')) || null;
+      const link   = get(row, 'link');
+      if (!dir || !precio || !supT || !supCub) continue;
+      const incid   = precio / supT;
+      const sfPrime = 1;
+      const iCorr   = incid;
+      const vSuelo  = supT * fot * vm2Suelo;
+      const vConst  = precio - vSuelo;
+      const supHomo = supCub + supSemi * 0.5;
+      const unitConst = supHomo > 0 ? vConst / supHomo : 0;
+      const cfPrime = 1;
+      const cFin    = unitConst;
+      const casa = { id: Date.now() + i, dir, precio, supT, supCub, supSemi, fot, ant, dias, link,
+        sf1:1, sf2:1, sf3:1, sf4:1, sfPrime, iCorr, vSuelo, vConst,
+        cf1:1, cf2:1, cf3:1, cf4:1, cf5:1, cfPrime, supHomo, unitConst, cFin };
+      window._cc_casas.push(casa);
+      importados++;
+    }
+    if (!importados) { alert('No se encontraron filas válidas (dir, precio, supT y supCub son obligatorios).'); input.value=''; return; }
+    await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas });
+    renderCasas();
+    input.value = '';
+    alert(`✓ ${importados} casa${importados>1?'s':''} importada${importados>1?'s':''}.`);
   };
 
   // ─── CÁLCULO TABLAS DE VALORACIÓN ───────────────────────────────────────
