@@ -694,7 +694,7 @@
         <div class="table-wrap">
           <table>
             <thead>
-              <tr>
+              <tr id="ant-thead-ordenado">
                 <th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Viz.</th>
                 <th>Precio (USD)</th><th>Sup.Cub.</th><th>Ant.</th><th>Dorm.</th>
                 <th>Disp.</th><th>Estado</th><th>V/m²</th>
@@ -2020,8 +2020,28 @@
     const wrap = document.getElementById('ant-ordenados-wrap');
     const tbody2 = document.getElementById('ant-tbody-ordenado');
     if (!wrap || !tbody2) return;
+    const esLote = window._tasacionActual?.tipo === 'lote';
+    const theadOrd = document.getElementById('ant-thead-ordenado');
+    if (esLote) {
+      theadOrd.innerHTML = `<th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Viz.</th><th>Precio (USD)</th><th>Sup. Total</th><th>Estado</th><th>V/m²</th>`;
+    } else {
+      theadOrd.innerHTML = `<th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Viz.</th><th>Precio (USD)</th><th>Sup.Cub.</th><th>Ant.</th><th>Dorm.</th><th>Disp.</th><th>Estado</th><th>V/m²</th>`;
+    }
     tbody2.innerHTML = sorted.map((a, i) => {
       const bg = i % 2 === 0 ? '' : 'background:#F7F7F5';
+      if (esLote) {
+        return `<tr style="${bg}">
+          <td style="font-weight:700;color:var(--verde)">${i+1}</td>
+          <td>${a.barrio||'—'}</td>
+          <td>${a.direccion||'—'}</td>
+          <td>${a.dias||'—'}</td>
+          <td>${a.viz||'—'}</td>
+          <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
+          <td>${a.supTotal ? a.supTotal+' m²' : (a.supCub ? a.supCub+' m²' : '—')}</td>
+          <td>${a.estado||'—'}</td>
+          <td style="font-weight:700;color:var(--verde)">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
+        </tr>`;
+      }
       return `<tr style="${bg}">
         <td style="font-weight:700;color:var(--verde)">${i+1}</td>
         <td>${a.barrio||'—'}</td>
