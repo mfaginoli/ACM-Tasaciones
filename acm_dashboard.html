@@ -793,7 +793,7 @@
       <div class="table-wrap" style="margin-bottom:24px">
         <table>
           <thead>
-            <tr>
+            <tr id="comp-thead-row">
               <th style="width:40px">✓</th>
               <th>#</th>
               <th>Dirección</th>
@@ -2150,7 +2150,7 @@
     const esCasa  = tipo === 'casa_sin';
 
     // Actualizar encabezados según tipo
-    const thead = document.querySelector('#comp-tbody').closest('table').querySelector('thead tr');
+    const thead = document.getElementById('comp-thead-row');
     if (esLote) {
       thead.innerHTML = `
         <th style="width:40px">✓</th><th>#</th><th>Dirección</th>
