@@ -2145,40 +2145,65 @@
   window.renderComparables = () => {
     const tbody = document.getElementById('comp-tbody');
     const ants = [...window._antecedentes].sort((a, b) => (a.vm2||0) - (b.vm2||0));
+    const tipo = window._tasacionActual?.tipo || 'dpto';
+    const esLote  = tipo === 'lote';
+    const esCasa  = tipo === 'casa_sin';
+
+    // Actualizar encabezados según tipo
+    const thead = document.querySelector('#comp-tbody').closest('table').querySelector('thead tr');
+    if (esLote) {
+      thead.innerHTML = `
+        <th style="width:40px">✓</th><th>#</th><th>Dirección</th>
+        <th>Precio</th><th>Sup. Total</th><th>Estado</th>
+        <th>Días pub.</th><th>V/m²</th><th>Link</th>`;
+    } else {
+      thead.innerHTML = `
+        <th style="width:40px">✓</th><th>#</th><th>Dirección</th>
+        <th>Precio</th><th>Sup. Cub.</th>
+        <th id="th-balcon-terreno">${esCasa ? 'Sup. Terreno' : 'Balcón'}</th>
+        <th>Ant.</th><th>Dorm.</th>
+        ${esCasa ? '' : '<th id="th-disp-col">Disp.</th><th id="th-amenities">Amenities</th>'}
+        <th>Estado</th><th>Días pub.</th><th>V/m²</th><th>Link</th>`;
+    }
+
     if (!ants.length) {
-      tbody.innerHTML = '<tr><td colspan="14"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>';
+      const cols = esLote ? 9 : (esCasa ? 12 : 14);
+      tbody.innerHTML = `<tr><td colspan="${cols}"><div class="empty-state"><div class="empty-icon">📝</div><div class="empty-text">No hay antecedentes cargados en Operativo 1.</div></div></td></tr>`;
       return;
     }
-    const tipo = window._tasacionActual?.tipo || 'dpto';
-    const esCasa = tipo === 'casa_sin';
     tbody.innerHTML = ants.map((a, i) => {
       const sel = window._seleccionados.includes(a.id);
       let diasColor = 'var(--negro)';
       if (a.dias >= 300) diasColor = 'var(--rojo)';
       else if (a.dias >= 150) diasColor = '#E8A020';
       else if (a.dias > 0 && a.dias <= 30) diasColor = 'var(--verde)';
-      const supTerr = a.supTotal ? `${a.supTotal} m²` : '—';
+      const supTerr  = a.supTotal ? `${a.supTotal} m²` : '—';
       const estadoStr = a.estado ? `${a.estado}${a.estadoNum ? ` (${a.estadoNum}/10)` : ''}` : '—';
+      const linkCell = `<td style="text-align:center">${a.link ? `<a href="${a.link}" target="_blank" style="color:var(--verde);font-size:11px;text-decoration:none" title="${a.link}">Ver →</a>` : '—'}</td>`;
+      const chk = `<td style="text-align:center"><input type="checkbox" class="checkbox-comp" value="${a.id}" ${sel ? 'checked' : ''} onchange="toggleComp(${a.id}, this.checked)"></td>`;
 
-      return `<tr class="${sel ? 'comp-selected' : ''}" id="comp-row-${a.id}">
-        <td style="text-align:center">
-          <input type="checkbox" class="checkbox-comp" value="${a.id}" ${sel ? 'checked' : ''}
-            onchange="toggleComp(${a.id}, this.checked)">
-        </td>
-        <td>${i+1}</td>
-        <td>${a.direccion||'—'}</td>
+      if (esLote) {
+        return `<tr class="${sel?'comp-selected':''}" id="comp-row-${a.id}">
+          ${chk}<td>${i+1}</td><td>${a.direccion||'—'}</td>
+          <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
+          <td>${supTerr}</td>
+          <td>${estadoStr}</td>
+          <td style="color:${diasColor};font-weight:600">${a.dias||'—'}</td>
+          <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
+          ${linkCell}</tr>`;
+      }
+      return `<tr class="${sel?'comp-selected':''}" id="comp-row-${a.id}">
+        ${chk}<td>${i+1}</td><td>${a.direccion||'—'}</td>
         <td>USD ${Number(a.precio).toLocaleString('es-AR')}</td>
         <td>${a.supCub} m²</td>
         <td>${esCasa ? supTerr : (a.supDesc ? a.supDesc+' m²' : '—')}</td>
         <td>${a.ant != null ? (a.ant === 0 ? 'Estrenar' : a.ant+' años') : '—'}</td>
         <td>${a.dorm||'—'}</td>
-        ${esCasa ? '' : `<td>${a.planta||'—'}</td>`}
-        ${esCasa ? '' : `<td>${a.amenities||'—'}</td>`}
+        ${esCasa ? '' : `<td>${a.planta||'—'}</td><td>${a.amenities||'—'}</td>`}
         <td>${estadoStr}</td>
         <td style="color:${diasColor};font-weight:600">${a.dias||'—'}</td>
         <td class="vm2-cell">USD ${Number(a.vm2).toLocaleString('es-AR')}</td>
-        <td style="text-align:center">${a.link ? `<a href="${a.link}" target="_blank" style="color:var(--verde);font-size:11px;text-decoration:none" title="${a.link}">Ver →</a>` : '—'}</td>
-      </tr>`;
+        ${linkCell}</tr>`;
     }).join('');
     actualizarContadorComp();
   };
