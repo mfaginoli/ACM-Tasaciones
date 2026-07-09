@@ -2267,10 +2267,16 @@
     'Frente / Visibilidad', 'Estacionamiento', 'Tiempo en mercado', 'Revalorización'
   ];
 
+  const FACTORES_LOTE = [
+    'Ubicación', 'Superficie', 'Ancho de frente', 'Forma del lote',
+    'Entorno / Barrio', 'Servicios', 'Acceso / Pavimento', 'Tiempo en mercado', 'Revalorización'
+  ];
+
   const FACTORES = () => {
     const tipo = window._tasacionActual?.tipo || 'dpto';
     if (tipo === 'casa_sin') return FACTORES_CASA_SIN;
     if (tipo === 'local')    return FACTORES_LOCAL;
+    if (tipo === 'lote')     return FACTORES_LOTE;
     return FACTORES_DPTO;
   };
 
@@ -3129,6 +3135,8 @@
       ? ['Ubic. suelo','Sup. suelo','Ancho suelo','F. suelo','Ant. const.','Calidad','Conserv.','Desea.','T. pub.']
       : tipo === 'local'
       ? ['Ubicación','Superficie','Antigüedad','Estado general','Calidad constructiva','Infraestructura','Frente / Visibilidad','Estacionamiento','Tiempo en mercado','Revalorización']
+      : tipo === 'lote'
+      ? ['Ubicación','Superficie','Ancho de frente','Forma del lote','Entorno / Barrio','Servicios','Acceso / Pavimento','Tiempo en mercado','Revalorización']
       : ['Ubicación','Antigüedad','Cal. constructiva','Mantenimiento','Comodidades','Estacionamiento','Cochera','Revalorización','Deseabilidad','T. mercado'];
 
     // SLIDE 1: PORTADA
