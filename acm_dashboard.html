@@ -483,9 +483,9 @@
         </div>
         <div class="form-grid-4" style="margin-bottom:10px" id="f-tipo-wrap">
           <div class="form-field" id="f-sup-semi-wrap"><label>Sup. Semicubierta (m²)</label><input type="number" id="f-sup-semi" placeholder="0"></div>
-          <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0 = a estrenar"></div>
+          <div class="form-field" id="f-ant-wrap"><label>Antigüedad (años)</label><input type="number" id="f-ant" placeholder="0 = a estrenar"></div>
           <div class="form-field" id="f-dorm-wrap"><label>Dormitorios</label><input type="number" id="f-dorm" placeholder="1"></div>
-          <div class="form-field"><label>Baños</label><input type="number" id="f-ban" placeholder="1"></div>
+          <div class="form-field" id="f-ban-wrap"><label>Baños</label><input type="number" id="f-ban" placeholder="1"></div>
         </div>
 
         <!-- Fila 3: Características -->
@@ -661,9 +661,9 @@
               <th>Sup. Cub.</th>
               <th id="th-sup-desc">Sup. Desc.</th>
               <th>Tipo</th>
-              <th>Ant.</th>
+              <th id="th-ant">Ant.</th>
               <th>Dorm.</th>
-              <th>Baños</th>
+              <th id="th-ban">Baños</th>
               <th>Coch.</th>
               <th>Estado</th>
               <th>Disposición</th>
@@ -736,7 +736,7 @@
           <div class="form-field" id="p-cochera-wrap"><label>Cochera</label><select id="p-cochera"><option value="No">No</option><option value="Sí">Sí</option></select></div>
         </div>
         <div class="form-grid-3">
-          <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="p-ant" placeholder="0 = a estrenar"></div>
+          <div class="form-field" id="p-ant-wrap"><label>Antigüedad (años)</label><input type="number" id="p-ant" placeholder="0 = a estrenar"></div>
           <div class="form-field">
             <label>Estado <span style="font-size:9px;color:var(--gris-texto)">(etiqueta)</span></label>
             <select id="p-estado">
@@ -2286,22 +2286,29 @@
     const tipo = window._tasacionActual?.tipo || 'dpto';
     const esCasa  = tipo === 'casa_sin';
     const esLocal = tipo === 'local';
+    const esLote  = tipo === 'lote';
 
     // Op1 — mostrar/ocultar campos según tipo
     const supSemiWrap = document.getElementById('f-sup-semi-wrap');
     const supDescLbl  = document.getElementById('f-sup-desc-lbl');
     const dormWrap    = document.getElementById('f-dorm-wrap');
+    const antWrap     = document.getElementById('f-ant-wrap');
+    const banWrap     = document.getElementById('f-ban-wrap');
+    const supDescWrap = document.getElementById('f-sup-desc-wrap');
 
     if (supSemiWrap) supSemiWrap.style.display = esCasa ? '' : 'none';
-    if (dormWrap)    dormWrap.style.display    = (esCasa || esLocal) ? 'none' : '';
+    if (dormWrap)    dormWrap.style.display    = (esCasa || esLocal || esLote) ? 'none' : '';
+    if (antWrap)     antWrap.style.display     = esLote ? 'none' : '';
+    if (banWrap)     banWrap.style.display     = esLote ? 'none' : '';
+    if (supDescWrap) supDescWrap.style.display = esLote ? 'none' : '';
     if (supDescLbl)  supDescLbl.textContent    = esCasa ? 'Sup. Descubierta / Patio (m²)' : 'Sup. Descubierta (m²)';
 
     // Op1 — sup total label
     const supTotalInput = document.getElementById('f-sup-total');
     if (supTotalInput) {
       const lbl = supTotalInput.closest('.form-field')?.querySelector('label');
-      if (lbl) lbl.textContent = esCasa ? 'Sup. Terreno (m²)' : 'Sup. Total (m²)';
-      supTotalInput.placeholder = esCasa ? '200' : '50';
+      if (lbl) lbl.textContent = esCasa ? 'Sup. Terreno (m²)' : esLote ? 'Sup. del Lote (m²)' : 'Sup. Total (m²)';
+      supTotalInput.placeholder = esCasa ? '200' : esLote ? '300' : '50';
     }
 
     // Op2 — campos propiedad
@@ -2310,30 +2317,40 @@
     const jardinWrap   = document.getElementById('p-jardín-wrap');
     const cocheraWrap  = document.getElementById('p-cochera-wrap');
     const lblSupPropia = document.getElementById('lbl-sup-propia');
+    const p2AntWrap    = document.getElementById('p-ant-wrap');
+    const p2EstWrap    = document.getElementById('p-estado-wrap');
 
-    if (balconWrap)  balconWrap.style.display  = (esCasa || esLocal) ? 'none' : '';
+    if (balconWrap)  balconWrap.style.display  = (esCasa || esLocal || esLote) ? 'none' : '';
     if (terrenoWrap) terrenoWrap.style.display = esCasa ? '' : 'none';
     if (jardinWrap)  jardinWrap.style.display  = esCasa ? '' : 'none';
     if (cocheraWrap) cocheraWrap.style.display = esCasa ? '' : 'none';
-    if (lblSupPropia) lblSupPropia.textContent = esCasa ? 'Sup. cubierta (m²)' : 'Sup. cubierta (m²)';
+    if (p2AntWrap)   p2AntWrap.style.display   = esLote ? 'none' : '';
+    if (lblSupPropia) lblSupPropia.textContent = esCasa ? 'Sup. cubierta (m²)' : esLote ? 'Sup. del lote (m²)' : 'Sup. cubierta (m²)';
 
-    // Tabla comparables Op2 — encabezados según tipo
-    const thBalTer = document.getElementById('th-balcon-terreno');
-    const thAmen   = document.getElementById('th-amenities');
-    const thDisp   = document.getElementById('th-disp-col');
-    if (thBalTer) thBalTer.textContent     = esCasa ? 'Sup. Terreno' : 'Balcón';
-    if (thAmen)   thAmen.style.display     = (esCasa || esLocal) ? 'none' : '';
-    if (thDisp)   thDisp.style.display     = (esCasa || esLocal) ? 'none' : '';
+    // Tabla comparables Op2 — encabezados según tipo (solo si no esLote, que usa thead propio)
+    if (!esLote) {
+      const thBalTer = document.getElementById('th-balcon-terreno');
+      const thAmen   = document.getElementById('th-amenities');
+      const thDisp   = document.getElementById('th-disp-col');
+      if (thBalTer) thBalTer.textContent     = esCasa ? 'Sup. Terreno' : 'Balcón';
+      if (thAmen)   thAmen.style.display     = (esCasa || esLocal) ? 'none' : '';
+      if (thDisp)   thDisp.style.display     = (esCasa || esLocal) ? 'none' : '';
 
-    const emptyTd = document.querySelector('#comp-tbody td[colspan]');
-    const compCols = (esCasa || esLocal) ? '11' : '13';
-    if (emptyTd) emptyTd.setAttribute('colspan', compCols);
+      const emptyTd = document.querySelector('#comp-tbody td[colspan]');
+      const compCols = (esCasa || esLocal) ? '11' : '13';
+      if (emptyTd) emptyTd.setAttribute('colspan', compCols);
+    }
 
     // Tabla Op1 — encabezados
     const thSupTotal = document.getElementById('th-sup-total');
     const thSupDesc  = document.getElementById('th-sup-desc');
-    if (thSupTotal) thSupTotal.textContent = esCasa ? 'Sup. Terreno' : 'Sup. Total';
+    const thAnt      = document.getElementById('th-ant');
+    const thBan      = document.getElementById('th-ban');
+    if (thSupTotal) thSupTotal.textContent = esCasa ? 'Sup. Terreno' : esLote ? 'Sup. Lote' : 'Sup. Total';
     if (thSupDesc)  thSupDesc.textContent  = esCasa ? 'Sup. Desc./Patio' : 'Sup. Desc.';
+    if (thSupDesc)  thSupDesc.style.display = esLote ? 'none' : '';
+    if (thAnt)      thAnt.style.display     = esLote ? 'none' : '';
+    if (thBan)      thBan.style.display     = esLote ? 'none' : '';
   };
 
   window.construirTablaPonderacion = () => {
