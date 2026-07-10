@@ -4086,6 +4086,14 @@ ${allSlides}
     updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_factoresPond: factores, cc_vm2Const: vm2Hom }).catch(()=>{});
   };
 
+  // Formatear inputs de ponderación a 2 decimales al salir del campo
+  document.addEventListener('blur', e => {
+    if (e.target.classList.contains('pond-input')) {
+      const v = parseFloat(e.target.value);
+      e.target.value = (isNaN(v) ? 1 : v).toFixed(2);
+    }
+  }, true);
+
   window.eliminarCasa = async (id) => {
     window._cc_casas = window._cc_casas.filter(c=>c.id!==id);
     await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas });
