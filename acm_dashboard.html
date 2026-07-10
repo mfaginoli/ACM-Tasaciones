@@ -1056,9 +1056,11 @@
       <div class="table-wrap">
         <table>
           <thead><tr>
+            <th style="width:36px"><input type="checkbox" id="cc-t-chk-all" title="Seleccionar todos" onchange="toggleTodosTerrenos(this.checked)"></th>
             <th>#</th><th>Ubicación</th><th>Precio USD</th><th>Sup. (a)</th><th>FOT (b)</th>
             <th>Días pub.</th><th>Viz.</th><th>Link</th>
-            <th>Incidencia (i)</th><th>f1</th><th>f2</th><th>f3</th><th>f4</th><th>f5</th>
+            <th style="cursor:pointer" onclick="ordenarTerrenosPorVm2()" title="Ordenar por incidencia">Incidencia ↕</th>
+            <th>f1</th><th>f2</th><th>f3</th><th>f4</th><th>f5</th>
             <th>f'</th><th>i' correg.</th><th>V.Suelo (a×b×i')</th><th></th>
           </tr></thead>
           <tbody id="cc-terrenos-tbody"></tbody>
@@ -1084,6 +1086,33 @@
             <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:4px">Prom. días pub.</div>
             <div id="cc-t-prom-dias" style="font-family:'Cormorant Garamond',serif;font-size:22px;font-weight:600;color:var(--verde)">—</div>
           </div>
+        </div>
+      </div>
+
+      <!-- Ponderación Op1A terrenos -->
+      <div id="cc-tpond-section" style="display:none;margin-top:24px">
+        <div class="section-header" style="margin-bottom:12px">
+          <div class="section-title">Ponderación — Terrenos seleccionados (<span id="cc-tpond-count">0</span>)</div>
+        </div>
+        <div class="table-wrap">
+          <table id="cc-tpond-table">
+            <thead><tr id="cc-tpond-thead"></tr></thead>
+            <tbody id="cc-tpond-tbody"></tbody>
+            <tfoot id="cc-tpond-tfoot"></tfoot>
+          </table>
+        </div>
+        <div id="cc-tpond-resultado" style="display:none;margin-top:16px;background:var(--verde-claro);border:1px solid var(--gris-borde);border-radius:2px;padding:16px 20px;">
+          <div style="display:flex;gap:32px;flex-wrap:wrap;align-items:flex-end">
+            <div>
+              <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:4px">Incidencia promedio (sin ponderar)</div>
+              <div id="cc-tpond-vm2-prom" style="font-family:'Cormorant Garamond',serif;font-size:20px;font-weight:600;color:var(--verde)">—</div>
+            </div>
+            <div>
+              <div style="font-size:9px;letter-spacing:1.5px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:4px">V/m² suelo homogeneizado</div>
+              <div id="cc-tpond-vm2-hom" style="font-family:'Cormorant Garamond',serif;font-size:28px;font-weight:700;color:var(--verde)">—</div>
+            </div>
+          </div>
+          <div style="margin-top:10px;font-size:11px;color:var(--gris-texto)">Este valor se usa como base en Op. 1B — Casas</div>
         </div>
       </div>
     </div>
@@ -1860,9 +1889,10 @@
 
       if (tasacion.tipo === 'casa_con') {
         // Módulo casa con terreno
-        window._cc_terrenos      = tasacion.cc_terrenos      || [];
-        window._cc_casas         = tasacion.cc_casas         || [];
-        window._cc_seleccionados = tasacion.cc_seleccionados || [];
+        window._cc_terrenos        = tasacion.cc_terrenos        || [];
+        window._cc_casas           = tasacion.cc_casas           || [];
+        window._cc_seleccionados   = tasacion.cc_seleccionados   || [];
+        window._cc_t_seleccionados = tasacion.cc_t_seleccionados || [];
         window._cc_vm2_suelo = tasacion.cc_vm2Suelo || 0;
         window._cc_vm2_const = tasacion.cc_vm2Const || 0;
         showCC_Op1A();
@@ -3623,9 +3653,10 @@ ${allSlides}
   };
 
   // Estado screens casa_con
-  window._cc_terrenos      = [];
-  window._cc_casas         = [];
-  window._cc_seleccionados = [];
+  window._cc_terrenos        = [];
+  window._cc_casas           = [];
+  window._cc_seleccionados   = [];
+  window._cc_t_seleccionados = [];
 
   const showCC_screen = (id) => {
     ['cc-op1a-screen','cc-op1b-screen','cc-op2-screen',
@@ -3639,7 +3670,7 @@ ${allSlides}
     });
   };
 
-  window.showCC_Op1A = () => showCC_screen('cc-op1a-screen');
+  window.showCC_Op1A = () => { showCC_screen('cc-op1a-screen'); window._cc_t_seleccionados = window._tasacionActual?.cc_t_seleccionados || window._cc_t_seleccionados || []; renderTerrenos(); };
   window.showCC_Op1B = () => { showCC_screen('cc-op1b-screen'); window._cc_seleccionados = window._tasacionActual?.cc_seleccionados || window._cc_seleccionados || []; renderCasas(); };
   window.showCC_Op2  = () => { showCC_screen('cc-op2-screen'); calcularCC(); };
 
@@ -3674,11 +3705,18 @@ ${allSlides}
   const renderTerrenos = () => {
     const tbody = document.getElementById('cc-terrenos-tbody');
     const ants  = window._cc_terrenos;
-    if (!ants.length) { tbody.innerHTML='<tr><td colspan="18" style="text-align:center;color:var(--gris-texto);padding:20px">No hay terrenos cargados</td></tr>'; return; }
+    if (!ants.length) {
+      tbody.innerHTML='<tr><td colspan="20" style="text-align:center;color:var(--gris-texto);padding:20px">No hay terrenos cargados</td></tr>';
+      document.getElementById('cc-t-resultado').style.display = 'none';
+      document.getElementById('cc-tpond-section').style.display = 'none';
+      return;
+    }
     tbody.innerHTML = ants.map((t,i) => {
-      const bg = i%2===0?'':'background:#F7F7F5';
+      const sel = window._cc_t_seleccionados.includes(t.id);
+      const bg = sel ? 'background:#EAF4EE' : (i%2===0?'':'background:#F7F7F5');
       const linkCell = t.link ? `<a href="${t.link}" target="_blank" style="color:var(--verde);font-size:10px">Ver</a>` : '—';
-      return `<tr style="${bg}">
+      return `<tr id="cc-terreno-row-${t.id}" style="${bg}">
+        <td style="text-align:center"><input type="checkbox" value="${t.id}" ${sel?'checked':''} onchange="toggleTerrenoSeleccionado(${t.id}, this.checked)"></td>
         <td>${i+1}</td><td>${t.dir}</td>
         <td>USD ${Number(t.precio).toLocaleString('es-AR')}</td>
         <td>${t.sup} m²</td><td>${t.fot}</td>
@@ -3692,17 +3730,143 @@ ${allSlides}
       </tr>`;
     }).join('');
     const n = ants.length;
-    const promICorr = ants.reduce((s,t)=>s+t.iCorr,0)/n;
+    const promICorr  = ants.reduce((s,t)=>s+t.iCorr,0)/n;
     const promPrecio = ants.reduce((s,t)=>s+t.precio,0)/n;
-    const promSup = ants.reduce((s,t)=>s+t.sup,0)/n;
-    const conDias = ants.filter(t=>t.dias);
-    const promDias = conDias.length ? conDias.reduce((s,t)=>s+t.dias,0)/conDias.length : null;
-    document.getElementById('cc-t-vm2-suelo').textContent = `USD ${promICorr.toFixed(0)}/m²`;
-    document.getElementById('cc-t-prom-precio').textContent = `USD ${Math.round(promPrecio).toLocaleString('es-AR')}`;
-    document.getElementById('cc-t-prom-sup').textContent = `${promSup.toFixed(0)} m²`;
-    document.getElementById('cc-t-prom-dias').textContent = promDias ? `${Math.round(promDias)} días` : '—';
-    document.getElementById('cc-t-resultado').style.display = 'block';
-    window._cc_vm2_suelo = promICorr;
+    const promSup    = ants.reduce((s,t)=>s+t.sup,0)/n;
+    const conDias    = ants.filter(t=>t.dias);
+    const promDias   = conDias.length ? conDias.reduce((s,t)=>s+t.dias,0)/conDias.length : null;
+    document.getElementById('cc-t-vm2-suelo').textContent    = `USD ${promICorr.toFixed(0)}/m²`;
+    document.getElementById('cc-t-prom-precio').textContent  = `USD ${Math.round(promPrecio).toLocaleString('es-AR')}`;
+    document.getElementById('cc-t-prom-sup').textContent     = `${promSup.toFixed(0)} m²`;
+    document.getElementById('cc-t-prom-dias').textContent    = promDias ? `${Math.round(promDias)} días` : '—';
+    document.getElementById('cc-t-resultado').style.display  = 'block';
+    // No pisar _cc_vm2_suelo si ya hay resultado de ponderación
+    if (!window._cc_t_seleccionados.length) window._cc_vm2_suelo = promICorr;
+    if (window._cc_t_seleccionados.length > 0) {
+      document.getElementById('cc-tpond-section').style.display = 'block';
+      construirTablaPondTerrenos();
+    }
+  };
+
+  window.toggleTerrenoSeleccionado = (id, checked) => {
+    if (checked) {
+      if (!window._cc_t_seleccionados.includes(id)) window._cc_t_seleccionados.push(id);
+    } else {
+      window._cc_t_seleccionados = window._cc_t_seleccionados.filter(s => s !== id);
+    }
+    const row = document.getElementById(`cc-terreno-row-${id}`);
+    if (row) row.style.background = checked ? '#EAF4EE' : '';
+    const n = window._cc_t_seleccionados.length;
+    document.getElementById('cc-tpond-count').textContent = n;
+    if (n > 0) {
+      document.getElementById('cc-tpond-section').style.display = 'block';
+      construirTablaPondTerrenos();
+    } else {
+      document.getElementById('cc-tpond-section').style.display = 'none';
+      // Volver al promedio general
+      const all = window._cc_terrenos;
+      if (all.length) window._cc_vm2_suelo = all.reduce((s,t)=>s+t.iCorr,0)/all.length;
+    }
+    updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_t_seleccionados: window._cc_t_seleccionados }).catch(()=>{});
+  };
+
+  window.toggleTodosTerrenos = (checked) => {
+    window._cc_terrenos.forEach(t => {
+      window._cc_t_seleccionados = checked
+        ? [...new Set([...window._cc_t_seleccionados, t.id])]
+        : window._cc_t_seleccionados.filter(s => s !== t.id);
+      const chk = document.querySelector(`#cc-terrenos-tbody input[value="${t.id}"]`);
+      if (chk) chk.checked = checked;
+      const row = document.getElementById(`cc-terreno-row-${t.id}`);
+      if (row) row.style.background = checked ? '#EAF4EE' : '';
+    });
+    const n = window._cc_t_seleccionados.length;
+    document.getElementById('cc-tpond-count').textContent = n;
+    if (n > 0) {
+      document.getElementById('cc-tpond-section').style.display = 'block';
+      construirTablaPondTerrenos();
+    } else {
+      document.getElementById('cc-tpond-section').style.display = 'none';
+    }
+    updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_t_seleccionados: window._cc_t_seleccionados }).catch(()=>{});
+  };
+
+  window.ordenarTerrenosPorVm2 = () => {
+    window._cc_terrenos.sort((a,b) => (a.incid||0) - (b.incid||0));
+    renderTerrenos();
+  };
+
+  const CC_FACTORES_SUELO = ['Ubicación','Superficie','Ancho de frente','Forma del lote','Tiempo en mercado'];
+
+  window.construirTablaPondTerrenos = () => {
+    const sel = window._cc_terrenos.filter(t => window._cc_t_seleccionados.includes(t.id)).sort((a,b)=>(a.incid||0)-(b.incid||0));
+    document.getElementById('cc-tpond-count').textContent = sel.length;
+    const thead = document.getElementById('cc-tpond-thead');
+    thead.innerHTML = `<th class="pond-factor" style="background:var(--verde);color:white;min-width:160px">Factor</th>`
+      + sel.map(t => `<th class="pond-header-cell" style="min-width:90px">${t.dir.split(' ').slice(0,2).join(' ')}<br><small style="font-weight:300;opacity:0.8">USD ${Number(t.incid).toLocaleString('es-AR')}/m²</small></th>`).join('');
+    const guardados = window._tasacionActual?.cc_t_factoresPond || [];
+    const tbody = document.getElementById('cc-tpond-tbody');
+    tbody.innerHTML = CC_FACTORES_SUELO.map((f, fi) => {
+      const cells = sel.map((t, ci) => {
+        const g = guardados.find(x => x.id === t.id);
+        // Pre-llenar con f1-f5 guardados en el terreno si no hay ponderación previa
+        const defaultVal = [t.f1, t.f2, t.f3, t.f4, t.f5][fi] ?? 1.00;
+        const val = g?.factores?.[f] ?? defaultVal;
+        return `<td style="text-align:center;padding:4px 8px;border-bottom:1px solid var(--gris-claro)">
+          <input type="number" class="pond-input" id="cc-tpond-${fi}-${ci}"
+            value="${val.toFixed(2)}" step="0.05" min="0.5" max="1.5"
+            onchange="calcularPondTerrenos()">
+        </td>`;
+      }).join('');
+      return `<tr><td class="pond-factor">${f}</td>${cells}</tr>`;
+    }).join('');
+    const tfoot = document.getElementById('cc-tpond-tfoot');
+    tfoot.innerHTML = `
+      <tr style="background:var(--verde-claro)">
+        <td class="pond-factor" style="font-weight:700;color:var(--verde)">FH (Producto factores)</td>
+        ${sel.map((_,ci) => `<td class="pond-result" id="cc-tfh-${ci}">—</td>`).join('')}
+      </tr>
+      <tr style="background:var(--verde-claro)">
+        <td class="pond-factor" style="font-weight:700;color:var(--verde)">Incidencia corregida (USD/m²)</td>
+        ${sel.map((_,ci) => `<td class="pond-result" id="cc-tvu-${ci}">—</td>`).join('')}
+      </tr>`;
+    calcularPondTerrenos();
+  };
+
+  window.calcularPondTerrenos = () => {
+    const sel = window._cc_terrenos.filter(t => window._cc_t_seleccionados.includes(t.id)).sort((a,b)=>(a.incid||0)-(b.incid||0));
+    let total = 0;
+    sel.forEach((t, ci) => {
+      let fh = 1;
+      CC_FACTORES_SUELO.forEach((f, fi) => {
+        const inp = document.getElementById(`cc-tpond-${fi}-${ci}`);
+        if (inp) fh *= parseFloat(inp.value) || 1;
+      });
+      const iCorr = t.incid * fh;
+      total += iCorr;
+      const fhEl = document.getElementById(`cc-tfh-${ci}`);
+      const vuEl = document.getElementById(`cc-tvu-${ci}`);
+      if (fhEl) fhEl.textContent = fh.toFixed(4);
+      if (vuEl) vuEl.textContent = `USD ${Math.round(iCorr).toLocaleString('es-AR')}`;
+    });
+    const vm2Hom  = sel.length > 0 ? total / sel.length : 0;
+    const vm2Prom = sel.length > 0 ? sel.reduce((s,t)=>s+t.incid,0)/sel.length : 0;
+    document.getElementById('cc-tpond-vm2-prom').textContent = `USD ${Math.round(vm2Prom).toLocaleString('es-AR')}/m²`;
+    document.getElementById('cc-tpond-vm2-hom').textContent  = `USD ${Math.round(vm2Hom).toLocaleString('es-AR')}/m²`;
+    document.getElementById('cc-tpond-resultado').style.display = 'block';
+    // Actualizar el V/m² suelo que usa Op1B
+    window._cc_vm2_suelo = vm2Hom;
+    document.getElementById('cc-t-vm2-suelo').textContent = `USD ${Math.round(vm2Hom).toLocaleString('es-AR')}/m²`;
+    // Guardar
+    const factores = sel.map((t, ci) => {
+      const row = {};
+      CC_FACTORES_SUELO.forEach((f, fi) => {
+        const inp = document.getElementById(`cc-tpond-${fi}-${ci}`);
+        row[f] = inp ? parseFloat(inp.value)||1 : 1;
+      });
+      return { id: t.id, factores: row };
+    });
+    updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_t_factoresPond: factores, cc_vm2Suelo: vm2Hom }).catch(()=>{});
   };
 
   window.eliminarTerreno = async (id) => {
