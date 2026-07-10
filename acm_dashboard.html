@@ -1058,10 +1058,9 @@
           <thead><tr>
             <th style="width:36px"><input type="checkbox" id="cc-t-chk-all" title="Seleccionar todos" onchange="toggleTodosTerrenos(this.checked)"></th>
             <th>#</th><th>Ubicación</th><th>Precio USD</th><th>Sup. (a)</th><th>FOT (b)</th>
-            <th>Días pub.</th><th>Viz.</th><th>Link</th>
+            <th>Días pub.</th><th>Viz.</th>
             <th style="cursor:pointer" onclick="ordenarTerrenosPorVm2()" title="Ordenar por incidencia">Incidencia ↕</th>
-            <th>f1</th><th>f2</th><th>f3</th><th>f4</th><th>f5</th>
-            <th>f'</th><th>i' correg.</th><th>V.Suelo (a×b×i')</th><th></th>
+            <th>V.Suelo (a×b×i')</th><th>Link</th><th></th>
           </tr></thead>
           <tbody id="cc-terrenos-tbody"></tbody>
         </table>
@@ -3720,12 +3719,10 @@ ${allSlides}
         <td>${i+1}</td><td>${t.dir}</td>
         <td>USD ${Number(t.precio).toLocaleString('es-AR')}</td>
         <td>${t.sup} m²</td><td>${t.fot}</td>
-        <td>${t.dias||'—'}</td><td>${t.viz||'—'}</td><td>${linkCell}</td>
+        <td>${t.dias||'—'}</td><td>${t.viz||'—'}</td>
         <td>USD ${t.incid.toFixed(0)}</td>
-        <td>${t.f1.toFixed(2)}</td><td>${t.f2.toFixed(2)}</td><td>${t.f3.toFixed(2)}</td><td>${t.f4.toFixed(2)}</td><td>${t.f5.toFixed(2)}</td>
-        <td style="font-weight:600">${t.fprime.toFixed(4)}</td>
-        <td style="color:var(--verde);font-weight:600">USD ${t.iCorr.toFixed(0)}</td>
         <td style="color:var(--verde);font-weight:600">USD ${t.vSuelo.toFixed(0)}</td>
+        <td>${linkCell}</td>
         <td><button class="btn-del" onclick="eliminarTerreno(${t.id})">✕</button></td>
       </tr>`;
     }).join('');
