@@ -3799,7 +3799,7 @@ ${allSlides}
   const CC_FACTORES_SUELO = ['Ubicación','Superficie','Ancho de frente','Forma del lote','Tiempo en mercado'];
 
   window.construirTablaPondTerrenos = () => {
-    const sel = window._cc_terrenos.filter(t => window._cc_t_seleccionados.includes(t.id)).sort((a,b)=>(a.incid||0)-(b.incid||0));
+    const sel = window._cc_terrenos.filter(t => window._cc_t_seleccionados.includes(t.id));
     document.getElementById('cc-tpond-count').textContent = sel.length;
     const thead = document.getElementById('cc-tpond-thead');
     thead.innerHTML = `<th class="pond-factor" style="background:var(--verde);color:white;min-width:160px">Factor</th>`
@@ -3834,7 +3834,7 @@ ${allSlides}
   };
 
   window.calcularPondTerrenos = () => {
-    const sel = window._cc_terrenos.filter(t => window._cc_t_seleccionados.includes(t.id)).sort((a,b)=>(a.incid||0)-(b.incid||0));
+    const sel = window._cc_terrenos.filter(t => window._cc_t_seleccionados.includes(t.id));
     let total = 0;
     sel.forEach((t, ci) => {
       let fh = 1;
@@ -4020,7 +4020,7 @@ ${allSlides}
   const CC_FACTORES_CONST = ['Antigüedad','Calidad constructiva','Conservación','Tiempo en mercado','Deseabilidad'];
 
   window.construirTablaPondCasas = () => {
-    const sel = window._cc_casas.filter(c => window._cc_seleccionados.includes(c.id)).sort((a,b)=>(a.unitConst||0)-(b.unitConst||0));
+    const sel = window._cc_casas.filter(c => window._cc_seleccionados.includes(c.id));
     document.getElementById('cc-pond-count').textContent = sel.length;
     const thead = document.getElementById('cc-pond-thead');
     thead.innerHTML = `<th class="pond-factor" style="background:var(--verde);color:white;min-width:160px">Factor</th>`
@@ -4053,7 +4053,7 @@ ${allSlides}
   };
 
   window.calcularPondCasas = () => {
-    const sel = window._cc_casas.filter(c => window._cc_seleccionados.includes(c.id)).sort((a,b)=>(a.unitConst||0)-(b.unitConst||0));
+    const sel = window._cc_casas.filter(c => window._cc_seleccionados.includes(c.id));
     let vuTotal = 0;
     sel.forEach((c, ci) => {
       let fh = 1;
