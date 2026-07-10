@@ -625,7 +625,7 @@
                     <th style="padding:7px 8px;white-space:nowrap">Baños</th>
                     <th style="padding:7px 8px;white-space:nowrap">Estado</th>
                     <th style="padding:7px 8px;white-space:nowrap">Días</th>
-                    <th style="padding:7px 8px;white-space:nowrap">Viz.</th>
+                    <th style="padding:7px 8px;white-space:nowrap">Vis.</th>
                     <th style="padding:7px 8px;white-space:nowrap">Link</th>
                     <th style="padding:7px 8px"></th>
                   </tr>
@@ -654,7 +654,7 @@
               <th>Barrio</th>
               <th>Dirección</th>
               <th>Días</th>
-              <th>Viz.</th>
+              <th>Vis.</th>
               <th>Precio</th>
               <th>Doc.</th>
               <th id="th-sup-total">Sup. Total</th>
@@ -695,7 +695,7 @@
           <table>
             <thead>
               <tr id="ant-thead-ordenado">
-                <th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Viz.</th>
+                <th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Vis.</th>
                 <th>Precio (USD)</th><th>Sup.Cub.</th><th>Ant.</th><th>Dorm.</th>
                 <th>Disp.</th><th>Estado</th><th>V/m²</th>
               </tr>
@@ -1058,7 +1058,7 @@
           <thead><tr>
             <th style="width:36px"><input type="checkbox" id="cc-t-chk-all" title="Seleccionar todos" onchange="toggleTodosTerrenos(this.checked)"></th>
             <th>#</th><th>Ubicación</th><th>Precio USD</th><th>Sup. (a)</th><th>FOT (b)</th>
-            <th>Días pub.</th><th>Viz.</th>
+            <th>Días pub.</th><th>Vis.</th>
             <th style="cursor:pointer" onclick="ordenarTerrenosPorVm2()" title="Ordenar por incidencia">Incidencia ↕</th>
             <th>V.Suelo (a×b×i')</th><th>Link</th><th></th>
           </tr></thead>
@@ -1146,31 +1146,12 @@
         </div>
         <div class="form-grid-3" style="margin-bottom:12px">
           <div class="form-field"><label>Antigüedad (años)</label><input type="number" id="cc-c-ant" placeholder="20"></div>
+          <div class="form-field"><label>Estado (1-10)</label><input type="number" id="cc-c-estado" placeholder="7" min="1" max="10"></div>
           <div class="form-field"><label>Días publicado</label><input type="number" id="cc-c-dias" placeholder="60"></div>
-          <div class="form-field"><label>Visualizaciones</label><input type="number" id="cc-c-viz" placeholder="0"></div>
-        </div>
-        <div class="form-grid-3" style="margin-bottom:12px">
-          <div class="form-field"><label>Link</label><input type="text" id="cc-c-link" placeholder="zonaprop.com.ar/..."></div>
-        </div>
-        <div class="op1-form-title" style="margin-top:8px;margin-bottom:8px;font-size:10px">Factores ponderación suelo</div>
-        <div class="form-grid-3" style="margin-bottom:12px">
-          <div class="form-field"><label>f1 — Ubicación</label><input type="number" id="cc-c-sf1" value="1.00" step="0.05" min="0.5" max="1.5"></div>
-          <div class="form-field"><label>f2 — Superficie</label><input type="number" id="cc-c-sf2" value="1.00" step="0.05" min="0.5" max="1.5"></div>
-          <div class="form-field"><label>f3 — Ancho</label><input type="number" id="cc-c-sf3" value="1.00" step="0.05" min="0.5" max="1.5"></div>
-        </div>
-        <div class="form-grid-3" style="margin-bottom:12px">
-          <div class="form-field"><label>f4 — Tiempo pub.</label><input type="number" id="cc-c-sf4" value="1.00" step="0.05" min="0.5" max="1.5"></div>
-          <div class="form-field"></div><div class="form-field"></div>
-        </div>
-        <div class="op1-form-title" style="margin-top:8px;margin-bottom:8px;font-size:10px">Factores ponderación construcción</div>
-        <div class="form-grid-3" style="margin-bottom:12px">
-          <div class="form-field"><label>f1 — Antigüedad</label><input type="number" id="cc-c-cf1" value="1.00" step="0.05" min="0.5" max="1.5"></div>
-          <div class="form-field"><label>f2 — Calidad</label><input type="number" id="cc-c-cf2" value="1.00" step="0.05" min="0.5" max="1.5"></div>
-          <div class="form-field"><label>f3 — Conservación</label><input type="number" id="cc-c-cf3" value="1.00" step="0.05" min="0.5" max="1.5"></div>
         </div>
         <div class="form-grid-3">
-          <div class="form-field"><label>f4 — Tiempo pub.</label><input type="number" id="cc-c-cf4" value="1.00" step="0.05" min="0.5" max="1.5"></div>
-          <div class="form-field"><label>f5 — Deseabilidad</label><input type="number" id="cc-c-cf5" value="1.00" step="0.05" min="0.5" max="1.5"></div>
+          <div class="form-field"><label>Vis.</label><input type="number" id="cc-c-viz" placeholder="0"></div>
+          <div class="form-field"><label>Link</label><input type="text" id="cc-c-link" placeholder="zonaprop.com.ar/..."></div>
           <div class="form-field" style="display:flex;align-items:flex-end">
             <button class="btn-agregar" onclick="agregarCasa()" style="width:100%">+ Agregar casa</button>
           </div>
@@ -1182,11 +1163,13 @@
         <table>
           <thead><tr>
             <th style="width:36px"><input type="checkbox" id="cc-c-chk-all" title="Seleccionar todos" onchange="toggleTodasCasas(this.checked)"></th>
-            <th>#</th><th>Ubicación</th><th>Precio</th><th>Días</th><th>Viz.</th><th>Link</th>
-            <th>Sup.T</th><th>Sup.Cub</th><th>Sup.Semi</th>
-            <th>FOT</th><th>V.Suelo</th><th>V.Const (C)</th><th>Sup.Homo</th>
-            <th style="cursor:pointer" onclick="ordenarCasasPorVm2()" title="Ordenar por C/m²">C/m² ↕</th>
-            <th>f' const.</th><th>C' fin</th><th></th>
+            <th>#</th><th>Vis.</th><th>Ubicación</th><th>Ant.</th>
+            <th>Oferta (P)</th><th>Sup.T (a)</th><th>FOT (b)</th>
+            <th>I = V/m² suelo</th>
+            <th>f1</th><th>f2</th><th>f3</th><th>f4</th><th>f'</th><th>I' correg.</th>
+            <th>V.Suelo (a×b×I')</th><th>% S</th>
+            <th style="cursor:pointer" onclick="ordenarCasasPorVm2()" title="Ordenar por V.Constr.">V.Constr. (P-S) ↕</th><th>% C</th>
+            <th>Link</th><th></th>
           </tr></thead>
           <tbody id="cc-casas-tbody"></tbody>
         </table>
@@ -1221,7 +1204,7 @@
       <!-- Ponderación Op1B -->
       <div id="cc-pond-section" style="display:none;margin-top:24px">
         <div class="section-header" style="margin-bottom:12px">
-          <div class="section-title">Ponderación — Casas seleccionadas (<span id="cc-pond-count">0</span>)</div>
+          <div class="section-title">Ponderación Construcción — Casas seleccionadas (<span id="cc-pond-count">0</span>)</div>
         </div>
         <div class="table-wrap">
           <table id="cc-pond-table">
@@ -2125,9 +2108,9 @@
     const esLote = window._tasacionActual?.tipo === 'lote';
     const theadOrd = document.getElementById('ant-thead-ordenado');
     if (esLote) {
-      theadOrd.innerHTML = `<th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Viz.</th><th>Precio (USD)</th><th>Sup. Total</th><th>Estado</th><th>V/m²</th>`;
+      theadOrd.innerHTML = `<th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Vis.</th><th>Precio (USD)</th><th>Sup. Total</th><th>Estado</th><th>V/m²</th>`;
     } else {
-      theadOrd.innerHTML = `<th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Viz.</th><th>Precio (USD)</th><th>Sup.Cub.</th><th>Ant.</th><th>Dorm.</th><th>Disp.</th><th>Estado</th><th>V/m²</th>`;
+      theadOrd.innerHTML = `<th>Pos.</th><th>Barrio</th><th>Dirección</th><th>Días pub.</th><th>Vis.</th><th>Precio (USD)</th><th>Sup.Cub.</th><th>Ant.</th><th>Dorm.</th><th>Disp.</th><th>Estado</th><th>V/m²</th>`;
     }
     tbody2.innerHTML = sorted.map((a, i) => {
       const bg = i % 2 === 0 ? '' : 'background:#F7F7F5';
@@ -3882,93 +3865,126 @@ ${allSlides}
     const supSemi= parseFloat(document.getElementById('cc-c-sup-semi').value)||0;
     const fot    = parseFloat(document.getElementById('cc-c-fot').value)||1;
     const ant    = parseFloat(document.getElementById('cc-c-ant').value)||0;
+    const estado = parseFloat(document.getElementById('cc-c-estado').value)||0;
     const dias   = parseInt(document.getElementById('cc-c-dias').value)||null;
     const viz    = parseInt(document.getElementById('cc-c-viz').value)||null;
     const link   = document.getElementById('cc-c-link').value.trim();
-    // Factores suelo
-    const sf1=parseFloat(document.getElementById('cc-c-sf1').value)||1;
-    const sf2=parseFloat(document.getElementById('cc-c-sf2').value)||1;
-    const sf3=parseFloat(document.getElementById('cc-c-sf3').value)||1;
-    const sf4=parseFloat(document.getElementById('cc-c-sf4').value)||1;
-    // Factores construcción
-    const cf1=parseFloat(document.getElementById('cc-c-cf1').value)||1;
-    const cf2=parseFloat(document.getElementById('cc-c-cf2').value)||1;
-    const cf3=parseFloat(document.getElementById('cc-c-cf3').value)||1;
-    const cf4=parseFloat(document.getElementById('cc-c-cf4').value)||1;
-    const cf5=parseFloat(document.getElementById('cc-c-cf5').value)||1;
-    if (!dir||!precio||!supT||!supCub) { alert('Completá los campos obligatorios.'); return; }
-    // Cálculos suelo
+    if (!dir||!precio||!supT||!supCub) { alert('Completá los campos obligatorios (ubicación, precio, sup. terreno, sup. cubierta).'); return; }
     const vm2Suelo = window._cc_vm2_suelo||0;
-    const incid    = precio / supT;
-    const sfPrime  = sf1*sf2*sf3*sf4;
-    const iCorr    = incid * sfPrime;
-    const vSuelo   = supT * fot * vm2Suelo; // usando vm2 de Op1A
-    const vConst   = precio - vSuelo;
-    // Cálculos construcción
-    const supHomo  = supCub + supSemi*0.5;
-    const unitConst= supHomo>0 ? vConst/supHomo : 0;
-    const cfPrime  = cf1*cf2*cf3*cf4*cf5;
-    const cFin     = unitConst * cfPrime;
-    const casa = { id:Date.now(), dir, precio, supT, supCub, supSemi, fot, ant, dias, viz, link,
-      sf1,sf2,sf3,sf4, sfPrime, iCorr, vSuelo, vConst,
-      cf1,cf2,cf3,cf4,cf5, cfPrime, supHomo, unitConst, cFin };
+    const sf1=1, sf2=1, sf3=1, sf4=1, sfPrime=1;
+    const iCorr  = vm2Suelo;
+    const vSuelo = supT * fot * iCorr;
+    const vConst = precio - vSuelo;
+    const supHomo = supCub + supSemi * 0.5;
+    const unitConst = supHomo > 0 ? vConst / supHomo : 0;
+    const cf1=1, cf2=1, cf3=1, cf4=1, cf5=1, cfPrime=1;
+    const cFin = unitConst;
+    const casa = { id:Date.now(), dir, precio, supT, supCub, supSemi, fot, ant, estado, dias, viz, link,
+      sf1, sf2, sf3, sf4, sfPrime, iCorr, vSuelo, vConst,
+      cf1, cf2, cf3, cf4, cf5, cfPrime, supHomo, unitConst, cFin };
     window._cc_casas.push(casa);
     await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas });
     renderCasas();
-    ['cc-c-dir','cc-c-precio','cc-c-sup-t','cc-c-sup-cub','cc-c-sup-semi','cc-c-ant','cc-c-dias','cc-c-viz','cc-c-link']
-      .forEach(id=>document.getElementById(id).value='');
-    ['cc-c-sf1','cc-c-sf2','cc-c-sf3','cc-c-sf4','cc-c-cf1','cc-c-cf2','cc-c-cf3','cc-c-cf4','cc-c-cf5']
-      .forEach(id=>document.getElementById(id).value='1.00');
+    ['cc-c-dir','cc-c-precio','cc-c-sup-t','cc-c-sup-cub','cc-c-sup-semi','cc-c-ant','cc-c-estado','cc-c-dias','cc-c-viz','cc-c-link']
+      .forEach(id=>{ const el=document.getElementById(id); if(el) el.value=''; });
+    document.getElementById('cc-c-fot').value = '1';
   };
 
   const renderCasas = () => {
     const tbody = document.getElementById('cc-casas-tbody');
     const casas = window._cc_casas;
     if (!casas.length) {
-      tbody.innerHTML='<tr><td colspan="19" style="text-align:center;color:var(--gris-texto);padding:20px">No hay casas cargadas</td></tr>';
+      tbody.innerHTML='<tr><td colspan="21" style="text-align:center;color:var(--gris-texto);padding:20px">No hay casas cargadas</td></tr>';
       document.getElementById('cc-c-resultado').style.display = 'none';
       document.getElementById('cc-pond-section').style.display = 'none';
       return;
     }
+    const vm2Suelo = window._cc_vm2_suelo || 0;
     tbody.innerHTML = casas.map((c,i) => {
       const sel = window._cc_seleccionados.includes(c.id);
       const bg = sel ? 'background:#EAF4EE' : (i%2===0?'':'background:#F7F7F5');
       const linkCell = c.link ? `<a href="${c.link}" target="_blank" style="color:var(--verde);font-size:10px">Ver</a>` : '—';
+      const sf1=c.sf1||1, sf2=c.sf2||1, sf3=c.sf3||1, sf4=c.sf4||1;
+      const sfPrime = sf1*sf2*sf3*sf4;
+      const iCorr   = vm2Suelo * sfPrime;
+      const vSuelo  = c.supT * c.fot * iCorr;
+      const vConst  = c.precio - vSuelo;
+      const pctS = c.precio > 0 ? (vSuelo/c.precio*100) : 0;
+      const pctC = c.precio > 0 ? (vConst/c.precio*100) : 0;
+      const unitConst = (c.supHomo||0) > 0 ? vConst/(c.supHomo) : 0;
+      Object.assign(c, { sfPrime, iCorr, vSuelo, vConst, unitConst, cFin: unitConst*(c.cfPrime||1) });
+      const inpStyle = 'width:42px;border:none;background:transparent;text-align:center;font-size:11px;color:var(--negro)';
       return `<tr id="cc-casa-row-${c.id}" style="${bg}">
         <td style="text-align:center"><input type="checkbox" value="${c.id}" ${sel?'checked':''} onchange="toggleCasaSeleccionada(${c.id}, this.checked)"></td>
-        <td>${i+1}</td><td>${c.dir}</td>
+        <td>${i+1}</td>
+        <td><input type="number" value="${c.viz||''}" placeholder="—" style="${inpStyle}" onchange="actualizarVizCC('casa',${c.id},this.value)"></td>
+        <td style="max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.dir}">${c.dir}</td>
+        <td>${c.ant||'—'}</td>
         <td>USD ${Number(c.precio).toLocaleString('es-AR')}</td>
-        <td>${c.dias||'—'}</td>
-        <td><input type="number" value="${c.viz||''}" placeholder="—" style="width:52px;border:none;background:transparent;text-align:center;font-size:11px;color:var(--negro)" onchange="actualizarVizCC('casa',${c.id},this.value)"></td>
-        <td>${linkCell}</td>
-        <td>${c.supT}m²</td><td>${c.supCub}m²</td><td>${c.supSemi||0}m²</td>
+        <td>${c.supT}m²</td>
         <td>${c.fot}</td>
-        <td style="color:var(--verde)">USD ${c.vSuelo.toFixed(0)}</td>
-        <td style="color:var(--verde)">USD ${c.vConst.toFixed(0)}</td>
-        <td>${c.supHomo.toFixed(1)}m²</td>
-        <td>USD ${c.unitConst.toFixed(0)}</td>
-        <td>${c.cfPrime.toFixed(3)}</td>
-        <td style="font-weight:700;color:var(--verde)">USD ${c.cFin.toFixed(0)}</td>
+        <td style="color:var(--gris-texto)">${vm2Suelo.toFixed(0)}</td>
+        <td><input type="number" id="cc-sf1-${c.id}" class="pond-input" value="${(c.sf1||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaCasa(${c.id})"></td>
+        <td><input type="number" id="cc-sf2-${c.id}" class="pond-input" value="${(c.sf2||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaCasa(${c.id})"></td>
+        <td><input type="number" id="cc-sf3-${c.id}" class="pond-input" value="${(c.sf3||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaCasa(${c.id})"></td>
+        <td><input type="number" id="cc-sf4-${c.id}" class="pond-input" value="${(c.sf4||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaCasa(${c.id})"></td>
+        <td id="cc-sfpr-${c.id}">${sfPrime.toFixed(3)}</td>
+        <td id="cc-icorr-${c.id}">${iCorr.toFixed(0)}</td>
+        <td id="cc-vsuelo-${c.id}" style="color:var(--verde)">USD ${vSuelo.toFixed(0)}</td>
+        <td id="cc-pcts-${c.id}" style="color:var(--gris-texto);font-size:10px">${pctS.toFixed(1)}%</td>
+        <td id="cc-vconst-${c.id}" style="color:var(--verde);font-weight:600">USD ${vConst.toFixed(0)}</td>
+        <td id="cc-pctc-${c.id}" style="color:var(--gris-texto);font-size:10px">${pctC.toFixed(1)}%</td>
+        <td>${linkCell}</td>
         <td><button class="btn-del" onclick="eliminarCasa(${c.id})">✕</button></td>
       </tr>`;
     }).join('');
     const n = casas.length;
-    const promConst = casas.reduce((s,c)=>s+c.cFin,0)/n;
     const promPrecio = casas.reduce((s,c)=>s+c.precio,0)/n;
-    const promSup = casas.reduce((s,c)=>s+c.supCub,0)/n;
-    const conDias = casas.filter(c=>c.dias);
-    const promDias = conDias.length ? conDias.reduce((s,c)=>s+c.dias,0)/conDias.length : null;
-    document.getElementById('cc-c-vm2-const').textContent = `USD ${promConst.toFixed(0)}/m²`;
+    const promSup    = casas.reduce((s,c)=>s+c.supCub,0)/n;
+    const conDias    = casas.filter(c=>c.dias);
+    const promDias   = conDias.length ? conDias.reduce((s,c)=>s+c.dias,0)/conDias.length : null;
+    const promUnit   = casas.reduce((s,c)=>s+(c.unitConst||0),0)/n;
+    document.getElementById('cc-c-vm2-const').textContent = `USD ${promUnit.toFixed(0)}/m²`;
     document.getElementById('cc-c-vm2-suelo-ref').textContent = `USD ${(window._cc_vm2_suelo||0).toFixed(0)}/m²`;
     document.getElementById('cc-c-prom-precio').textContent = `USD ${Math.round(promPrecio).toLocaleString('es-AR')}`;
     document.getElementById('cc-c-prom-sup').textContent = `${promSup.toFixed(0)} m²`;
     document.getElementById('cc-c-prom-dias').textContent = promDias ? `${Math.round(promDias)} días` : '—';
     document.getElementById('cc-c-resultado').style.display = 'block';
-    window._cc_vm2_const = promConst;
-    // Actualizar sección ponderación si hay seleccionados
     if (window._cc_seleccionados.length > 0) {
       document.getElementById('cc-pond-section').style.display = 'block';
       construirTablaPondCasas();
+    }
+  };
+
+  window.recalcularFilaCasa = (id) => {
+    const c = window._cc_casas.find(x => x.id === id);
+    if (!c) return;
+    const sf1 = parseFloat(document.getElementById(`cc-sf1-${id}`)?.value)||1;
+    const sf2 = parseFloat(document.getElementById(`cc-sf2-${id}`)?.value)||1;
+    const sf3 = parseFloat(document.getElementById(`cc-sf3-${id}`)?.value)||1;
+    const sf4 = parseFloat(document.getElementById(`cc-sf4-${id}`)?.value)||1;
+    const vm2Suelo = window._cc_vm2_suelo || 0;
+    const sfPrime  = sf1*sf2*sf3*sf4;
+    const iCorr    = vm2Suelo * sfPrime;
+    const vSuelo   = c.supT * c.fot * iCorr;
+    const vConst   = c.precio - vSuelo;
+    const unitConst = (c.supHomo||0) > 0 ? vConst / c.supHomo : 0;
+    const cFin = unitConst * (c.cfPrime||1);
+    const pctS = c.precio > 0 ? (vSuelo/c.precio*100) : 0;
+    const pctC = c.precio > 0 ? (vConst/c.precio*100) : 0;
+    Object.assign(c, { sf1, sf2, sf3, sf4, sfPrime, iCorr, vSuelo, vConst, unitConst, cFin });
+    const set = (elId, val) => { const el=document.getElementById(elId); if(el) el.textContent=val; };
+    set(`cc-sfpr-${id}`,   sfPrime.toFixed(3));
+    set(`cc-icorr-${id}`,  iCorr.toFixed(0));
+    set(`cc-vsuelo-${id}`, `USD ${vSuelo.toFixed(0)}`);
+    set(`cc-pcts-${id}`,   `${pctS.toFixed(1)}%`);
+    set(`cc-vconst-${id}`, `USD ${vConst.toFixed(0)}`);
+    set(`cc-pctc-${id}`,   `${pctC.toFixed(1)}%`);
+    updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas }).catch(()=>{});
+    if (window._cc_seleccionados.includes(id)) {
+      set(`cc-cpond-vc-${id}`, `USD ${vConst.toFixed(0)}`);
+      set(`cc-cpond-uc-${id}`, `USD ${unitConst.toFixed(0)}`);
+      recalcularFilaPondConst(id);
     }
   };
 
@@ -4013,77 +4029,79 @@ ${allSlides}
   };
 
   window.ordenarCasasPorVm2 = () => {
-    window._cc_casas.sort((a,b) => (a.unitConst||0) - (b.unitConst||0));
+    window._cc_casas.sort((a,b) => (a.vConst||0) - (b.vConst||0));
     renderCasas();
   };
-
-  const CC_FACTORES_CONST = ['Antigüedad','Calidad constructiva','Conservación','Tiempo en mercado','Deseabilidad'];
 
   window.construirTablaPondCasas = () => {
     const sel = window._cc_casas.filter(c => window._cc_seleccionados.includes(c.id));
     document.getElementById('cc-pond-count').textContent = sel.length;
+    if (!sel.length) { document.getElementById('cc-pond-section').style.display='none'; return; }
     const thead = document.getElementById('cc-pond-thead');
-    thead.innerHTML = `<th class="pond-factor" style="background:var(--verde);color:white;min-width:160px">Factor</th>`
-      + sel.map(c => `<th class="pond-header-cell" style="min-width:90px">${c.dir.split(' ').slice(0,2).join(' ')}<br><small style="font-weight:300;opacity:0.8">USD ${Number(c.unitConst).toLocaleString('es-AR')}/m²</small></th>`).join('');
-    const guardados = window._tasacionActual?.cc_factoresPond || [];
-    const tbody = document.getElementById('cc-pond-tbody');
-    tbody.innerHTML = CC_FACTORES_CONST.map((f, fi) => {
-      const cells = sel.map((c, ci) => {
-        const g = guardados.find(x => x.id === c.id);
-        const val = g?.factores?.[f] ?? 1.00;
-        return `<td style="text-align:center;padding:4px 8px;border-bottom:1px solid var(--gris-claro)">
-          <input type="number" class="pond-input" id="cc-pond-${fi}-${ci}"
-            value="${val.toFixed(2)}" step="0.05" min="0.5" max="1.5"
-            onchange="calcularPondCasas()">
-        </td>`;
-      }).join('');
-      return `<tr><td class="pond-factor">${f}</td>${cells}</tr>`;
-    }).join('');
-    const tfoot = document.getElementById('cc-pond-tfoot');
-    tfoot.innerHTML = `
-      <tr style="background:var(--verde-claro)">
-        <td class="pond-factor" style="font-weight:700;color:var(--verde)">FH (Producto factores)</td>
-        ${sel.map((_,ci) => `<td class="pond-result" id="cc-fh-${ci}">—</td>`).join('')}
-      </tr>
-      <tr style="background:var(--verde-claro)">
-        <td class="pond-factor" style="font-weight:700;color:var(--verde)">C' fin homogeneizado (USD/m²)</td>
-        ${sel.map((_,ci) => `<td class="pond-result" id="cc-vu-${ci}">—</td>`).join('')}
-      </tr>`;
-    calcularPondCasas();
+    const tbody  = document.getElementById('cc-pond-tbody');
+    const tfoot  = document.getElementById('cc-pond-tfoot');
+    thead.innerHTML = `<tr>
+      <th>#</th><th>Estado</th><th>Ubicación</th><th>Ant.</th>
+      <th>V.Constr. (P-S)</th><th>Sup.Cub.</th><th>Sup.Semi.</th><th>Sup.Homo (h)</th>
+      <th>Unit.Constr. (P-S)/h</th>
+      <th>f1 Ant.</th><th>f2 Cal.</th><th>f3 Cons.</th><th>f4 T.Pub.</th><th>f5 Des.</th>
+      <th>f'</th><th>C' = f'×Unit</th>
+    </tr>`;
+    tbody.innerHTML = sel.map((c,i) => `<tr id="cc-cpond-row-${c.id}">
+      <td>${i+1}</td>
+      <td>${c.estado||'—'}</td>
+      <td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.dir}">${c.dir}</td>
+      <td>${c.ant||'—'}</td>
+      <td id="cc-cpond-vc-${c.id}">USD ${(c.vConst||0).toFixed(0)}</td>
+      <td>${c.supCub}m²</td>
+      <td>${c.supSemi||0}m²</td>
+      <td>${(c.supHomo||0).toFixed(1)}m²</td>
+      <td id="cc-cpond-uc-${c.id}">USD ${(c.unitConst||0).toFixed(0)}</td>
+      <td><input type="number" id="cc-cf1-${c.id}" class="pond-input" value="${(c.cf1||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaPondConst(${c.id})"></td>
+      <td><input type="number" id="cc-cf2-${c.id}" class="pond-input" value="${(c.cf2||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaPondConst(${c.id})"></td>
+      <td><input type="number" id="cc-cf3-${c.id}" class="pond-input" value="${(c.cf3||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaPondConst(${c.id})"></td>
+      <td><input type="number" id="cc-cf4-${c.id}" class="pond-input" value="${(c.cf4||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaPondConst(${c.id})"></td>
+      <td><input type="number" id="cc-cf5-${c.id}" class="pond-input" value="${(c.cf5||1).toFixed(2)}" step="0.05" min="0.5" max="1.5" onchange="recalcularFilaPondConst(${c.id})"></td>
+      <td id="cc-cpond-cfpr-${c.id}">${(c.cfPrime||1).toFixed(3)}</td>
+      <td id="cc-cpond-cfin-${c.id}" style="font-weight:700;color:var(--verde)">USD ${(c.cFin||0).toFixed(0)}</td>
+    </tr>`).join('');
+    tfoot.innerHTML = `<tr style="background:var(--verde-claro)">
+      <td colspan="15" style="font-weight:700;color:var(--verde);text-align:right;padding:8px 12px">C' promedio homogeneizado (USD/m²)</td>
+      <td id="cc-cpond-avg" style="font-weight:700;color:var(--verde);font-size:14px">—</td>
+    </tr>`;
+    recalcularPromedioConst();
   };
 
-  window.calcularPondCasas = () => {
+  window.recalcularFilaPondConst = (id) => {
+    const c = window._cc_casas.find(x => x.id === id);
+    if (!c) return;
+    const cf1 = parseFloat(document.getElementById(`cc-cf1-${id}`)?.value)||1;
+    const cf2 = parseFloat(document.getElementById(`cc-cf2-${id}`)?.value)||1;
+    const cf3 = parseFloat(document.getElementById(`cc-cf3-${id}`)?.value)||1;
+    const cf4 = parseFloat(document.getElementById(`cc-cf4-${id}`)?.value)||1;
+    const cf5 = parseFloat(document.getElementById(`cc-cf5-${id}`)?.value)||1;
+    const cfPrime = cf1*cf2*cf3*cf4*cf5;
+    const cFin = (c.unitConst||0) * cfPrime;
+    Object.assign(c, { cf1, cf2, cf3, cf4, cf5, cfPrime, cFin });
+    const set = (elId, val) => { const el=document.getElementById(elId); if(el) el.textContent=val; };
+    set(`cc-cpond-cfpr-${id}`, cfPrime.toFixed(3));
+    set(`cc-cpond-cfin-${id}`, `USD ${cFin.toFixed(0)}`);
+    recalcularPromedioConst();
+    updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas }).catch(()=>{});
+  };
+
+  const recalcularPromedioConst = () => {
     const sel = window._cc_casas.filter(c => window._cc_seleccionados.includes(c.id));
-    let vuTotal = 0;
-    sel.forEach((c, ci) => {
-      let fh = 1;
-      CC_FACTORES_CONST.forEach((f, fi) => {
-        const inp = document.getElementById(`cc-pond-${fi}-${ci}`);
-        if (inp) fh *= parseFloat(inp.value) || 1;
-      });
-      const vu = c.unitConst * fh;
-      vuTotal += vu;
-      const fhEl = document.getElementById(`cc-fh-${ci}`);
-      const vuEl = document.getElementById(`cc-vu-${ci}`);
-      if (fhEl) fhEl.textContent = fh.toFixed(4);
-      if (vuEl) vuEl.textContent = `USD ${Math.round(vu).toLocaleString('es-AR')}`;
-    });
-    const vm2Hom = sel.length > 0 ? vuTotal / sel.length : 0;
-    const vm2Prom = sel.length > 0 ? sel.reduce((s,c)=>s+c.unitConst,0)/sel.length : 0;
-    document.getElementById('cc-pond-vm2-prom').textContent = `USD ${Math.round(vm2Prom).toLocaleString('es-AR')}/m²`;
-    document.getElementById('cc-pond-vm2-hom').textContent = `USD ${Math.round(vm2Hom).toLocaleString('es-AR')}/m²`;
+    if (!sel.length) return;
+    const promUnit = sel.reduce((s,c)=>s+(c.unitConst||0),0)/sel.length;
+    const promCFin = sel.reduce((s,c)=>s+(c.cFin||0),0)/sel.length;
+    const set = (elId, val) => { const el=document.getElementById(elId); if(el) el.textContent=val; };
+    set('cc-cpond-avg',      `USD ${Math.round(promCFin).toLocaleString('es-AR')}/m²`);
+    set('cc-pond-vm2-prom',  `USD ${Math.round(promUnit).toLocaleString('es-AR')}/m²`);
+    set('cc-pond-vm2-hom',   `USD ${Math.round(promCFin).toLocaleString('es-AR')}/m²`);
     document.getElementById('cc-pond-resultado').style.display = 'block';
-    window._cc_vm2_const = vm2Hom;
-    // Guardar factores
-    const factores = sel.map((c, ci) => {
-      const row = {};
-      CC_FACTORES_CONST.forEach((f, fi) => {
-        const inp = document.getElementById(`cc-pond-${fi}-${ci}`);
-        row[f] = inp ? parseFloat(inp.value)||1 : 1;
-      });
-      return { id: c.id, factores: row };
-    });
-    updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_factoresPond: factores, cc_vm2Const: vm2Hom }).catch(()=>{});
+    window._cc_vm2_const = promCFin;
+    updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_vm2Const: promCFin }).catch(()=>{});
   };
 
   // Formatear inputs de ponderación a 2 decimales al salir del campo
@@ -4107,7 +4125,8 @@ ${allSlides}
 
   window.eliminarCasa = async (id) => {
     window._cc_casas = window._cc_casas.filter(c=>c.id!==id);
-    await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas });
+    window._cc_seleccionados = window._cc_seleccionados.filter(s=>s!==id);
+    await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ cc_casas: window._cc_casas, cc_seleccionados: window._cc_seleccionados });
     renderCasas();
   };
 
@@ -4175,27 +4194,27 @@ ${allSlides}
       const row = lines[i].split(',');
       const dir    = get(row, 'dir', 'direccion');
       const precio = parseFloat(get(row, 'precio'));
-      const supT   = parseFloat(get(row, 'supt', 'suptotal', 'supt'));
-      const supCub = parseFloat(get(row, 'supcub', 'supcubierta', 'supcub'));
+      const supT   = parseFloat(get(row, 'supt', 'suptotal'));
+      const supCub = parseFloat(get(row, 'supcub', 'supcubierta'));
       const supSemi= parseFloat(get(row, 'supsemi', 'supsemicubierta')) || 0;
       const fot    = parseFloat(get(row, 'fot')) || 1;
       const ant    = parseFloat(get(row, 'ant', 'antiguedad')) || 0;
+      const estado = parseFloat(get(row, 'estado')) || 0;
       const dias   = parseInt(get(row, 'dias')) || null;
       const viz    = parseInt(get(row, 'viz')) || null;
       const link   = get(row, 'link');
       if (!dir || !precio || !supT || !supCub) continue;
-      const incid   = precio / supT;
-      const sfPrime = 1;
-      const iCorr   = incid;
-      const vSuelo  = supT * fot * vm2Suelo;
+      const sf1=1, sf2=1, sf3=1, sf4=1, sfPrime=1;
+      const iCorr   = vm2Suelo;
+      const vSuelo  = supT * fot * iCorr;
       const vConst  = precio - vSuelo;
       const supHomo = supCub + supSemi * 0.5;
       const unitConst = supHomo > 0 ? vConst / supHomo : 0;
-      const cfPrime = 1;
-      const cFin    = unitConst;
-      const casa = { id: Date.now() + i, dir, precio, supT, supCub, supSemi, fot, ant, dias, viz, link,
-        sf1:1, sf2:1, sf3:1, sf4:1, sfPrime, iCorr, vSuelo, vConst,
-        cf1:1, cf2:1, cf3:1, cf4:1, cf5:1, cfPrime, supHomo, unitConst, cFin };
+      const cf1=1, cf2=1, cf3=1, cf4=1, cf5=1, cfPrime=1;
+      const cFin = unitConst;
+      const casa = { id: Date.now() + i, dir, precio, supT, supCub, supSemi, fot, ant, estado, dias, viz, link,
+        sf1, sf2, sf3, sf4, sfPrime, iCorr, vSuelo, vConst,
+        cf1, cf2, cf3, cf4, cf5, cfPrime, supHomo, unitConst, cFin };
       window._cc_casas.push(casa);
       importados++;
     }
