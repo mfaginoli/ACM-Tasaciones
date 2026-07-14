@@ -1163,7 +1163,7 @@
         <table>
           <thead><tr>
             <th style="width:36px"><input type="checkbox" id="cc-c-chk-all" title="Seleccionar todos" onchange="toggleTodasCasas(this.checked)"></th>
-            <th>#</th><th>Vis.</th><th>Ubicación</th><th>Ant.</th><th>Días pub.</th>
+            <th>#</th><th>Días pub.</th><th>Vis.</th><th>Ubicación</th><th>Ant.</th>
             <th>Precio (P)</th><th>Sup.T (a)</th><th>FOT (b)</th>
             <th>I = V/m² suelo</th>
             <th>f1<br><small style="font-weight:300">Ubicación</small></th>
@@ -3922,10 +3922,10 @@ ${allSlides}
       return `<tr id="cc-casa-row-${c.id}" style="${bg}">
         <td style="text-align:center"><input type="checkbox" value="${c.id}" ${sel?'checked':''} onchange="toggleCasaSeleccionada(${c.id}, this.checked)"></td>
         <td>${i+1}</td>
+        <td>${c.dias||'—'}</td>
         <td><input type="number" value="${c.viz||''}" placeholder="—" style="${inpStyle}" onchange="actualizarVizCC('casa',${c.id},this.value)"></td>
         <td style="max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.dir}">${c.dir}</td>
         <td>${c.ant||'—'}</td>
-        <td>${c.dias||'—'}</td>
         <td>USD ${Number(c.precio).toLocaleString('es-AR')}</td>
         <td>${c.supT}m²</td>
         <td>${c.fot}</td>
