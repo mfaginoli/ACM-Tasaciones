@@ -4398,11 +4398,11 @@ ${allSlides}
         link: c.link || ''
       }));
 
-    // Superficie ponderada: cubiertos al 100% + semicubiertos al 50% — leer del DOM
-    const supCub  = parseFloat(document.getElementById('cc-p-sup-cub')?.value)  || 0;
-    const supSemi = parseFloat(document.getElementById('cc-p-sup-semi')?.value) || 0;
+    // Superficie ponderada de la propiedad sujeto: cubiertos al 100% + semicubiertos al 50%
+    const t = window._tasacionActual;
+    const supCub  = t?.propiedad?.supCub  || 0;
+    const supSemi = t?.propiedad?.supSemi || 0;
     const supPond = supCub + supSemi * 0.5;
-    // V/m² = valor promedio de ambos métodos / superficie ponderada
     const vm2Ref  = supPond > 0 ? Math.round(window._cc_valProm / supPond) : 0;
 
     // Navegar a LP (usar pantallas cc)
