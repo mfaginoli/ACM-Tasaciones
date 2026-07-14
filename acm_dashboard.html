@@ -4041,13 +4041,15 @@ ${allSlides}
     const thead = document.getElementById('cc-pond-thead');
     const tbody  = document.getElementById('cc-pond-tbody');
     const tfoot  = document.getElementById('cc-pond-tfoot');
-    thead.innerHTML = `<tr>
-      <th>#</th><th>Estado</th><th>Ubicación</th><th>Ant.</th>
+    thead.innerHTML = `<th>#</th><th>Estado</th><th>Ubicación</th><th>Ant.</th>
       <th>V.Constr. (P-S)</th><th>Sup.Cub.</th><th>Sup.Semi.</th><th>Sup.Homo (h)</th>
-      <th>Unit.Constr. (P-S)/h</th>
-      <th>f1 Ant.</th><th>f2 Cal.</th><th>f3 Cons.</th><th>f4 T.Pub.</th><th>f5 Des.</th>
-      <th>f'</th><th>C' = f'×Unit</th>
-    </tr>`;
+      <th>Unit.Constr.<br><small style="font-weight:300">(P-S)/h</small></th>
+      <th>f1<br><small style="font-weight:300">Antigüedad</small></th>
+      <th>f2<br><small style="font-weight:300">Calidad</small></th>
+      <th>f3<br><small style="font-weight:300">Conserv.</small></th>
+      <th>f4<br><small style="font-weight:300">T.Pub.</small></th>
+      <th>f5<br><small style="font-weight:300">Deseab.</small></th>
+      <th>f'</th><th>C' = f'×Unit</th>`;
     tbody.innerHTML = sel.map((c,i) => `<tr id="cc-cpond-row-${c.id}">
       <td>${i+1}</td>
       <td>${c.estado||'—'}</td>
