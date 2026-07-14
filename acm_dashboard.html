@@ -1273,6 +1273,9 @@
             </select>
           </div>
         </div>
+        <div style="margin-top:12px">
+          <button class="btn-agregar" id="cc-btn-guardar-prop" onclick="guardarPropiedadCC()">Guardar datos de la propiedad</button>
+        </div>
       </div>
 
       <!-- Parámetros Ross-Heidecke -->
@@ -3681,7 +3684,23 @@ ${allSlides}
 
   window.showCC_Op1A = () => { showCC_screen('cc-op1a-screen'); window._cc_t_seleccionados = window._tasacionActual?.cc_t_seleccionados || window._cc_t_seleccionados || []; renderTerrenos(); };
   window.showCC_Op1B = () => { showCC_screen('cc-op1b-screen'); window._cc_seleccionados = window._tasacionActual?.cc_seleccionados || window._cc_seleccionados || []; renderCasas(); };
-  window.showCC_Op2  = () => { showCC_screen('cc-op2-screen'); calcularCC(); };
+  window.showCC_Op2  = () => {
+    showCC_screen('cc-op2-screen');
+    const p = window._tasacionActual?.propiedad || {};
+    const setVal = (id, v) => { if (v != null) { const el=document.getElementById(id); if(el) el.value=v; } };
+    setVal('cc-p-sup-t',   p.supT);
+    setVal('cc-p-sup-cub', p.supCub);
+    setVal('cc-p-sup-semi',p.supSemi);
+    setVal('cc-p-coch',    p.coch);
+    setVal('cc-p-pileta',  p.pileta);
+    setVal('cc-p-desc',    p.desc);
+    setVal('cc-p-fot',     p.fot);
+    setVal('cc-p-ant',     p.ant);
+    setVal('cc-p-estado',  p.estado);
+    setVal('cc-rh-vr',     p.vrRH);
+    setVal('cc-rh-vu',     p.vuRH);
+    calcularCC();
+  };
 
   // ─── TERRENOS ───────────────────────────────────────────────────────────
   window.agregarTerreno = async () => {
@@ -4332,6 +4351,27 @@ ${allSlides}
     window._cc_valComp = valComp;
     window._cc_valRH   = valRH;
     window._cc_valProm = prom;
+  };
+
+  window.guardarPropiedadCC = async () => {
+    if (!window._currentTasacionId) { alert('Abrí una tasación primero.'); return; }
+    const prop = {
+      supT:   parseFloat(document.getElementById('cc-p-sup-t').value)    || null,
+      supCub: parseFloat(document.getElementById('cc-p-sup-cub').value)  || null,
+      supSemi:parseFloat(document.getElementById('cc-p-sup-semi').value) || null,
+      coch:   parseFloat(document.getElementById('cc-p-coch').value)     || null,
+      pileta: parseFloat(document.getElementById('cc-p-pileta').value)   || null,
+      desc:   parseFloat(document.getElementById('cc-p-desc').value)     || null,
+      fot:    parseFloat(document.getElementById('cc-p-fot').value)      || 1,
+      ant:    parseFloat(document.getElementById('cc-p-ant').value)      || null,
+      estado: document.getElementById('cc-p-estado').value,
+      vrRH:   parseFloat(document.getElementById('cc-rh-vr').value)     || null,
+      vuRH:   parseFloat(document.getElementById('cc-rh-vu').value)     || 75,
+    };
+    await updateDoc(doc(db,'tasaciones',window._currentTasacionId),{ propiedad: prop });
+    if (window._tasacionActual) window._tasacionActual.propiedad = prop;
+    const btn = document.getElementById('cc-btn-guardar-prop');
+    if (btn) { btn.textContent='✓ Guardado'; setTimeout(()=>btn.textContent='Guardar datos de la propiedad',2000); }
   };
 
   window.guardarCC = async () => {
