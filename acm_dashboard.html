@@ -1057,8 +1057,8 @@
         <table>
           <thead><tr>
             <th style="width:36px"><input type="checkbox" id="cc-t-chk-all" title="Seleccionar todos" onchange="toggleTodosTerrenos(this.checked)"></th>
-            <th>#</th><th>Ubicación</th><th>Precio USD</th><th>Sup. (a)</th><th>FOT (b)</th>
-            <th>Días pub.</th><th>Vis.</th>
+            <th>#</th><th>Vis.</th><th>Ubicación</th><th>Precio USD</th>
+            <th>Sup. (a)</th><th>FOT (b)</th><th>Días pub.</th>
             <th style="cursor:pointer" onclick="ordenarTerrenosPorVm2()" title="Ordenar por incidencia">Incidencia ↕</th>
             <th>V.Suelo (a×b×i')</th><th>Link</th><th></th>
           </tr></thead>
@@ -3699,11 +3699,12 @@ ${allSlides}
       const linkCell = t.link ? `<a href="${t.link}" target="_blank" style="color:var(--verde);font-size:10px">Ver</a>` : '—';
       return `<tr id="cc-terreno-row-${t.id}" style="${bg}">
         <td style="text-align:center"><input type="checkbox" value="${t.id}" ${sel?'checked':''} onchange="toggleTerrenoSeleccionado(${t.id}, this.checked)"></td>
-        <td>${i+1}</td><td>${t.dir}</td>
+        <td>${i+1}</td>
+        <td><input type="number" value="${t.viz||''}" placeholder="—" style="width:48px;border:none;background:transparent;text-align:center;font-size:11px;color:var(--negro)" onchange="actualizarVizCC('terreno',${t.id},this.value)"></td>
+        <td style="max-width:140px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${t.dir}">${t.dir}</td>
         <td>USD ${Number(t.precio).toLocaleString('es-AR')}</td>
         <td>${t.sup} m²</td><td>${t.fot}</td>
         <td>${t.dias||'—'}</td>
-        <td><input type="number" value="${t.viz||''}" placeholder="—" style="width:52px;border:none;background:transparent;text-align:center;font-size:11px;color:var(--negro)" onchange="actualizarVizCC('terreno',${t.id},this.value)"></td>
         <td>USD ${t.incid.toFixed(0)}</td>
         <td style="color:var(--verde);font-weight:600">USD ${t.vSuelo.toFixed(0)}</td>
         <td>${linkCell}</td>
