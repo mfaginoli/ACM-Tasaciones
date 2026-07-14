@@ -1382,6 +1382,44 @@
     </div>
 
 
+    <!-- LÍNEA DE PRECIOS CASA CON LOTE -->
+    <div id="cc-lp-screen" style="display:none">
+      <button class="btn-back" onclick="showCC_screen('cc-op2-screen')">← Volver a Valoración</button>
+      <div class="op1-header" style="margin-bottom:20px">
+        <div>
+          <div class="page-title">Línea de <span>Precios</span></div>
+          <div class="page-sub" id="cc-lp-info"></div>
+        </div>
+      </div>
+
+      <div class="op1-form" style="margin-bottom:24px">
+        <div class="op1-form-title">Estrategia de precio — Casa con terreno</div>
+
+        <!-- tabla LP casa_con -->
+        <div style="overflow-x:auto;margin-top:16px">
+          <table id="cc-lp-table" style="border-collapse:collapse;width:100%;min-width:620px;font-size:13px">
+            <thead>
+              <tr style="background:var(--verde);color:white">
+                <th style="padding:10px 14px;text-align:left;min-width:130px"></th>
+                <th style="padding:10px 14px;text-align:left;width:110px"></th>
+                <th id="cc-lp-h0" style="padding:10px 10px;text-align:center;min-width:110px"></th>
+                <th id="cc-lp-h1" style="padding:10px 10px;text-align:center;min-width:110px"></th>
+                <th id="cc-lp-h2" style="padding:10px 10px;text-align:center;min-width:110px;border:3px solid #FFD700"></th>
+                <th id="cc-lp-h3" style="padding:10px 10px;text-align:center;min-width:110px"></th>
+                <th id="cc-lp-h4" style="padding:10px 10px;text-align:center;min-width:110px"></th>
+              </tr>
+            </thead>
+            <tbody id="cc-lp-tbody"></tbody>
+            <tfoot id="cc-lp-tfoot"></tfoot>
+          </table>
+        </div>
+
+        <div style="margin-top:16px;font-size:11px;color:var(--gris-texto)">
+          Los 5 escenarios se construyen aplicando −15%, −7%, 0%, +7%, +15% al V/m² de construcción resultante de la ponderación. El terreno se valúa al V/m² fijo de la incidencia homogeneizada.
+        </div>
+      </div>
+    </div>
+
     <!-- MODAL DETALLE ANTECEDENTE -->
     <div id="modal-detalle-ant" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.5);z-index:1000;align-items:flex-start;justify-content:center;overflow:auto;padding:40px 20px">
       <div style="background:white;width:100%;max-width:600px;border-radius:4px;padding:28px;position:relative">
@@ -3696,7 +3734,7 @@ ${allSlides}
   window._cc_t_seleccionados = [];
 
   const showCC_screen = (id) => {
-    ['cc-op1a-screen','cc-op1b-screen','cc-op2-screen',
+    ['cc-op1a-screen','cc-op1b-screen','cc-op2-screen','cc-lp-screen',
      'op1-screen','op2-screen','lp-screen','ranking-screen','dashboard-screen']
       .forEach(s => { const el=document.getElementById(s); if(el) el.style.display='none'; });
     document.getElementById(id).style.display = 'block';
@@ -4415,61 +4453,151 @@ ${allSlides}
   };
 
   window.guardarCCyIrALP = async () => {
-    // Refrescar cálculo para garantizar que _cc_valProm esté actualizado
     calcularCC();
-
-    // Fallback a valor guardado en Firebase si _cc_valProm sigue en 0
-    const valProm = window._cc_valProm || window._tasacionActual?.cc_valProm || 0;
-    if (!valProm) {
+    const valProm   = window._cc_valProm || window._tasacionActual?.cc_valProm || 0;
+    const vm2Suelo  = window._cc_vm2_suelo || window._tasacionActual?.cc_vm2Suelo || 0;
+    const vm2Const  = window._cc_vm2_const || window._tasacionActual?.cc_vm2Const || 0;
+    if (!valProm || !vm2Const) {
       alert('Completá la ponderación de casas y calculá la valoración primero.');
       return;
     }
-
-    // Guardar valoración
     await window.guardarCC();
+    showCC_screen('cc-lp-screen');
+    document.getElementById('cc-lp-info').textContent =
+      document.getElementById('cc-info-op2')?.textContent || '';
+    renderCCLP(vm2Suelo, vm2Const, valProm);
+  };
 
-    // Construir antecedentes para LP desde casas seleccionadas
-    // vm2 = cFin (V/m² construcción homogeneizado por ponderación)
-    const casas = window._cc_casas || [];
-    const selIds = window._cc_seleccionados || [];
-    window._antecedentes = casas
-      .filter(c => selIds.includes(c.id))
-      .map((c, i) => ({
-        id: i + 1,
-        dir: c.dir || '',
-        vm2: Math.round(c.cFin || c.unitConst || 0),
-        dias: c.dias || 0,
-        viz: c.viz || null,
-        link: c.link || ''
-      }))
-      .filter(a => a.vm2 > 0);
-
-    // Superficie ponderada: cubiertos 100% + semicubiertos 50%
-    // Leer del DOM primero, fallback a propiedad guardada en Firebase
-    const prop = window._tasacionActual?.propiedad || {};
-    const supCub  = parseFloat(document.getElementById('cc-p-sup-cub')?.value)  || prop.supCub  || 0;
-    const supSemi = parseFloat(document.getElementById('cc-p-sup-semi')?.value) || prop.supSemi || 0;
+  window.renderCCLP = (vm2Suelo, vm2Const, valProm) => {
+    // Datos de la propiedad sujeto
+    const prop    = window._tasacionActual?.propiedad || {};
+    const getField = (id, fallback) => parseFloat(document.getElementById(id)?.value) || fallback || 0;
+    const supT    = getField('cc-p-sup-t',   prop.supT);
+    const supCub  = getField('cc-p-sup-cub', prop.supCub);
+    const supSemi = getField('cc-p-sup-semi',prop.supSemi);
+    const fot     = getField('cc-p-fot',     prop.fot) || 1;
+    // Superficie construida ponderada (100% cubierta + 50% semicubierta)
     const supPond = Math.round((supCub + supSemi * 0.5) * 10) / 10;
 
-    // V/m² predeterminado = valor promedio ambos métodos / superficie ponderada
-    const vm2Ref = supPond > 0 ? Math.round(valProm / supPond) : 0;
+    // 5 factores de precio: -15%, -7%, 0%, +7%, +15%
+    const factores  = [0.85, 0.93, 1.00, 1.07, 1.15];
+    const pcts      = ['-15%', '-7%', '0%', '+7%', '+15%'];
+    const colColors = ['#2D5A45','#5A8F72','#E8A020','#C0392B','#8B0000'];
+    const colLight  = ['#DFF2EA','#EAF5EE','#FFF3DC','#FDECEA','#F5D5D5'];
 
-    // Navegar a LP
-    showCC_screen('lp-screen');
-    const backBtn = document.querySelector('#lp-screen .btn-back');
-    if (backBtn) backBtn.onclick = () => showCC_screen('cc-op2-screen');
+    // Precios de construcción por columna
+    const vm2Cols = factores.map(f => Math.round(vm2Const * f));
 
-    // Setear campos LP
-    const lpSup = document.getElementById('lp-sup');
-    const lpRef = document.getElementById('lp-vm2-ref');
-    if (lpSup) lpSup.value = supPond || '';
-    if (lpRef) lpRef.value = vm2Ref  || '';
+    // Días promedio de los antecedentes (casas seleccionadas) para cada columna
+    // Para cada col, tomo las casas cuyo cFin esté más cerca de ese vm2
+    const ants = (window._cc_casas || [])
+      .filter(c => (window._cc_seleccionados||[]).includes(c.id) && (c.cFin||c.unitConst||0) > 0);
 
-    // Info de tasación
-    const infoEl = document.getElementById('lp-tasacion-info');
-    if (infoEl) infoEl.textContent = document.getElementById('cc-tasacion-info')?.textContent || '';
+    const diasPorCol = vm2Cols.map(vm2Col => {
+      // rango ±20% alrededor del vm2 de columna
+      const lo = vm2Col * 0.80, hi = vm2Col * 1.20;
+      const enRango = ants.filter(c => { const v = c.cFin||c.unitConst||0; return v>=lo && v<=hi; });
+      if (!enRango.length) {
+        // fallback: el antecedente más cercano
+        const sorted = [...ants].sort((a,b) =>
+          Math.abs((a.cFin||a.unitConst||0)-vm2Col) - Math.abs((b.cFin||b.unitConst||0)-vm2Col));
+        return sorted[0]?.dias || null;
+      }
+      const vals = enRango.map(c => c.dias||0).filter(d=>d>0);
+      return vals.length ? Math.round(vals.reduce((s,d)=>s+d,0)/vals.length) : null;
+    });
 
-    calcularRangos();
+    // Color semáforo días
+    const diasColor = d => d===null ? '#ccc' : d<=90 ? '#2D5A45' : d<=180 ? '#E8A020' : '#C0392B';
+
+    // Valor terreno (fijo para todas las columnas)
+    const valTerreno = Math.round(supT * fot * vm2Suelo);
+
+    // Cabeceras
+    for (let i=0;i<5;i++) {
+      const th = document.getElementById(`cc-lp-h${i}`);
+      if (th) {
+        th.style.background = colColors[i];
+        th.style.color = 'white';
+        th.innerHTML = `<div style="font-size:15px;font-weight:700">USD ${vm2Cols[i].toLocaleString('es-AR')}/m²</div>
+          <div style="font-size:11px;opacity:0.85">${pcts[i]}</div>`;
+      }
+    }
+
+    const cols5 = (rowFn) => vm2Cols.map((v,i) => `<td style="padding:8px 10px;text-align:center;background:${colLight[i]}">${rowFn(v,i)}</td>`).join('');
+
+    const tbody = document.getElementById('cc-lp-tbody');
+    tbody.innerHTML = `
+      <!-- TERRENO header -->
+      <tr style="background:#f0f7f4">
+        <td colspan="2" style="padding:8px 14px;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--verde)">TERRENO</td>
+        ${cols5(()=>'')}</tr>
+      <tr>
+        <td style="padding:6px 14px;color:var(--gris-texto);font-size:12px">Superficie</td>
+        <td style="padding:6px 14px;font-weight:600">${supT > 0 ? supT+' m²' : '—'}</td>
+        ${cols5(()=>`${supT > 0 ? supT+' m²' : '—'}`)}</tr>
+      <tr>
+        <td style="padding:6px 14px;color:var(--gris-texto);font-size:12px">FOT</td>
+        <td style="padding:6px 14px;font-weight:600">${fot.toFixed(2)}</td>
+        ${cols5(()=>fot.toFixed(2))}</tr>
+      <tr style="background:#FFFDE7">
+        <td style="padding:8px 14px;color:var(--gris-texto);font-size:12px;font-weight:600">Precio incidencia</td>
+        <td style="padding:8px 14px;font-weight:700;color:var(--verde)">USD ${Math.round(vm2Suelo).toLocaleString('es-AR')}/m²</td>
+        ${cols5(()=>`<strong>USD ${Math.round(vm2Suelo).toLocaleString('es-AR')}</strong>`)}</tr>
+      <tr style="border-bottom:2px solid var(--verde)">
+        <td style="padding:8px 14px;font-weight:700">Valor terreno</td>
+        <td style="padding:8px 14px;font-weight:700">USD ${valTerreno.toLocaleString('es-AR')}</td>
+        ${cols5(()=>`USD ${valTerreno.toLocaleString('es-AR')}`)}</tr>
+
+      <!-- CONSTRUCCIÓN header -->
+      <tr style="background:#f0f7f4">
+        <td colspan="2" style="padding:8px 14px;font-weight:700;font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--verde)">CONSTRUCCIÓN</td>
+        ${cols5(()=>'')}</tr>
+      <tr>
+        <td style="padding:6px 14px;color:var(--gris-texto);font-size:12px">Sup. construida pond.</td>
+        <td style="padding:6px 14px;font-weight:600">${supPond > 0 ? supPond+' m²' : '—'}</td>
+        ${cols5(()=>`${supPond > 0 ? supPond+' m²' : '—'}`)}</tr>
+      <tr>
+        <td style="padding:6px 14px;color:var(--gris-texto);font-size:12px">Sup. cubierta (100%)</td>
+        <td style="padding:6px 14px">${supCub > 0 ? supCub+' m²' : '—'}</td>
+        ${cols5(()=>`${supCub > 0 ? supCub+' m²' : '—'}`)}</tr>
+      ${supSemi > 0 ? `<tr>
+        <td style="padding:6px 14px;color:var(--gris-texto);font-size:12px">Sup. semicubierta (50%)</td>
+        <td style="padding:6px 14px">${supSemi} m²</td>
+        ${cols5(()=>`${supSemi} m²`)}</tr>` : ''}
+      <tr style="background:#FFFDE7">
+        <td style="padding:8px 14px;color:var(--gris-texto);font-size:12px;font-weight:600">Precio construcción</td>
+        <td style="padding:8px 14px;font-weight:700;color:var(--verde)">USD ${Math.round(vm2Const).toLocaleString('es-AR')}/m²</td>
+        ${cols5((v,i)=>`<strong>USD ${vm2Cols[i].toLocaleString('es-AR')}</strong>`)}</tr>
+      <tr>
+        <td style="padding:8px 14px;color:var(--gris-texto);font-size:12px">Tiempo publicación</td>
+        <td style="padding:8px 14px;font-size:11px;color:var(--gris-texto)">prom. antecedentes</td>
+        ${vm2Cols.map((_,i)=>{
+          const d = diasPorCol[i];
+          const bg = diasColor(d);
+          return `<td style="padding:8px 10px;text-align:center;background:${colLight[i]}">
+            <div style="background:${bg};color:white;border-radius:3px;padding:4px 6px;font-size:11px;font-weight:600">
+              ${d !== null ? d+' días' : '—'}</div></td>`;
+        }).join('')}
+      </tr>
+      <tr style="border-top:2px solid var(--verde)">
+        <td style="padding:8px 14px;font-weight:700">Valor construcción</td>
+        <td style="padding:8px 14px;font-weight:700">USD ${Math.round(vm2Const*supPond).toLocaleString('es-AR')}</td>
+        ${cols5((_,i)=>`USD ${Math.round(vm2Cols[i]*supPond).toLocaleString('es-AR')}`)}</tr>
+    `;
+
+    // Tfoot — totales
+    const tfoot = document.getElementById('cc-lp-tfoot');
+    tfoot.innerHTML = `<tr style="background:var(--verde);color:white">
+      <td colspan="2" style="padding:12px 14px;font-weight:700;font-size:14px">TOTAL PROPIEDAD</td>
+      ${vm2Cols.map((_,i)=>{
+        const total = valTerreno + Math.round(vm2Cols[i]*supPond);
+        const isRef = i===2;
+        return `<td style="padding:12px 10px;text-align:center;font-weight:700;font-size:${isRef?'16px':'14px'};${isRef?'border:3px solid #FFD700':''}">
+          USD ${total.toLocaleString('es-AR')}<br>
+          <span style="font-size:10px;opacity:0.85">${pcts[i]}</span></td>`;
+      }).join('')}
+    </tr>`;
   };
 
   // ─── ABRIR TASACION: derivar según tipo ─────────────────────────────────
