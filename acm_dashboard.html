@@ -1163,8 +1163,8 @@
         <table>
           <thead><tr>
             <th style="width:36px"><input type="checkbox" id="cc-c-chk-all" title="Seleccionar todos" onchange="toggleTodasCasas(this.checked)"></th>
-            <th>#</th><th>Vis.</th><th>Ubicación</th><th>Ant.</th>
-            <th>Oferta (P)</th><th>Sup.T (a)</th><th>FOT (b)</th>
+            <th>#</th><th>Vis.</th><th>Ubicación</th><th>Ant.</th><th>Días pub.</th>
+            <th>Precio (P)</th><th>Sup.T (a)</th><th>FOT (b)</th>
             <th>I = V/m² suelo</th>
             <th>f1<br><small style="font-weight:300">Ubicación</small></th>
             <th>f2<br><small style="font-weight:300">Superficie</small></th>
@@ -3925,6 +3925,7 @@ ${allSlides}
         <td><input type="number" value="${c.viz||''}" placeholder="—" style="${inpStyle}" onchange="actualizarVizCC('casa',${c.id},this.value)"></td>
         <td style="max-width:130px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.dir}">${c.dir}</td>
         <td>${c.ant||'—'}</td>
+        <td>${c.dias||'—'}</td>
         <td>USD ${Number(c.precio).toLocaleString('es-AR')}</td>
         <td>${c.supT}m²</td>
         <td>${c.fot}</td>
@@ -4045,7 +4046,7 @@ ${allSlides}
     const thead = document.getElementById('cc-pond-thead');
     const tbody  = document.getElementById('cc-pond-tbody');
     const tfoot  = document.getElementById('cc-pond-tfoot');
-    thead.innerHTML = `<th>#</th><th>Estado</th><th>Ubicación</th><th>Ant.</th>
+    thead.innerHTML = `<th>#</th><th>Estado</th><th>Ubicación</th><th>Ant.</th><th>Días pub.</th>
       <th>V.Constr. (P-S)</th><th>Sup.Cub.</th><th>Sup.Semi.</th><th>Sup.Homo (h)</th>
       <th>Unit.Constr.<br><small style="font-weight:300">(P-S)/h</small></th>
       <th>f1<br><small style="font-weight:300">Antigüedad</small></th>
@@ -4059,6 +4060,7 @@ ${allSlides}
       <td>${c.estado||'—'}</td>
       <td style="max-width:120px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis" title="${c.dir}">${c.dir}</td>
       <td>${c.ant||'—'}</td>
+      <td>${c.dias||'—'}</td>
       <td id="cc-cpond-vc-${c.id}">USD ${(c.vConst||0).toFixed(0)}</td>
       <td>${c.supCub}m²</td>
       <td>${c.supSemi||0}m²</td>
@@ -4073,7 +4075,7 @@ ${allSlides}
       <td id="cc-cpond-cfin-${c.id}" style="font-weight:700;color:var(--verde)">USD ${(c.cFin||0).toFixed(0)}</td>
     </tr>`).join('');
     tfoot.innerHTML = `<tr style="background:var(--verde-claro)">
-      <td colspan="15" style="font-weight:700;color:var(--verde);text-align:right;padding:8px 12px">C' promedio homogeneizado (USD/m²)</td>
+      <td colspan="16" style="font-weight:700;color:var(--verde);text-align:right;padding:8px 12px">C' promedio homogeneizado (USD/m²)</td>
       <td id="cc-cpond-avg" style="font-weight:700;color:var(--verde);font-size:14px">—</td>
     </tr>`;
     recalcularPromedioConst();
