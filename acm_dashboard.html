@@ -907,10 +907,16 @@
           </table>
         </div>
 
-        <!-- GRÁFICO DE RANGOS -->
-        <div style="margin-top:24px">
-          <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:12px">Distribución del muestreo</div>
-          <canvas id="lp-chart" height="110"></canvas>
+        <!-- GRÁFICOS -->
+        <div style="margin-top:24px;display:flex;gap:24px;flex-wrap:wrap">
+          <div style="flex:1;min-width:240px">
+            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:12px">Distribución del muestreo</div>
+            <canvas id="lp-chart" height="110"></canvas>
+          </div>
+          <div style="flex:1;min-width:240px">
+            <div style="font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(--gris-texto);margin-bottom:12px">Días pub. promedio por rango</div>
+            <canvas id="lp-chart-dias" height="110"></canvas>
+          </div>
         </div>
       </div>
 
@@ -2723,6 +2729,37 @@
       ctx.textAlign = 'center';
       ctx.fillText(`${r.desde}`, x + barW/2, H - 4);
     });
+    // Gráfico de días promedio por rango
+    const canvas2 = document.getElementById('lp-chart-dias');
+    if (canvas2) {
+      const diasVals = rangosOrdenados.map(r => r.diasProm || 0);
+      const maxDias = Math.max(...diasVals, 1);
+      const W2 = canvas2.offsetWidth || 600;
+      canvas2.width = W2;
+      canvas2.height = H;
+      const ctx2 = canvas2.getContext('2d');
+      ctx2.clearRect(0,0,W2,H);
+      const barW2 = Math.floor(W2 / rangosOrdenados.length) - gap;
+      rangosOrdenados.forEach((r, i) => {
+        const dias = r.diasProm || 0;
+        const barH2 = dias > 0 ? Math.max(Math.round((dias / maxDias) * (chartH - 8)), 4) : 2;
+        const x2 = i * (barW2 + gap) + gap/2;
+        const y2 = numH + chartH - barH2;
+        ctx2.fillStyle = dias > 0 ? '#7B9E87' : '#ddd';
+        ctx2.fillRect(x2, y2, barW2, barH2);
+        if (dias > 0) {
+          ctx2.fillStyle = '#2D5A45';
+          ctx2.font = 'bold 10px DM Sans, sans-serif';
+          ctx2.textAlign = 'center';
+          ctx2.fillText(dias, x2 + barW2/2, y2 - 4);
+        }
+        ctx2.fillStyle = '#888';
+        ctx2.font = '9px DM Sans, sans-serif';
+        ctx2.textAlign = 'center';
+        ctx2.fillText(`${r.desde}`, x2 + barW2/2, H - 4);
+      });
+    }
+
     // Auto-completar REF solo si está vacío
     const refInput = document.getElementById('lp-vm2-ref');
     if (!refInput.value || refInput.value === '') {
@@ -4378,14 +4415,21 @@ ${allSlides}
   };
 
   window.guardarCCyIrALP = async () => {
-    if (!window._cc_vm2_const || !window._cc_valProm) {
+    // Refrescar cálculo para garantizar que _cc_valProm esté actualizado
+    calcularCC();
+
+    // Fallback a valor guardado en Firebase si _cc_valProm sigue en 0
+    const valProm = window._cc_valProm || window._tasacionActual?.cc_valProm || 0;
+    if (!valProm) {
       alert('Completá la ponderación de casas y calculá la valoración primero.');
       return;
     }
+
     // Guardar valoración
     await window.guardarCC();
 
-    // Construir antecedentes para LP desde casas seleccionadas (ponderación)
+    // Construir antecedentes para LP desde casas seleccionadas
+    // vm2 = cFin (V/m² construcción homogeneizado por ponderación)
     const casas = window._cc_casas || [];
     const selIds = window._cc_seleccionados || [];
     window._antecedentes = casas
@@ -4393,29 +4437,33 @@ ${allSlides}
       .map((c, i) => ({
         id: i + 1,
         dir: c.dir || '',
-        vm2: c.vConst && c.supCub ? Math.round(c.vConst / c.supCub) : 0,
+        vm2: Math.round(c.cFin || c.unitConst || 0),
         dias: c.dias || 0,
+        viz: c.viz || null,
         link: c.link || ''
-      }));
+      }))
+      .filter(a => a.vm2 > 0);
 
-    // Superficie ponderada: cubiertos al 100% + semicubiertos al 50% — leer del DOM
-    const supCub  = parseFloat(document.getElementById('cc-p-sup-cub')?.value)  || 0;
-    const supSemi = parseFloat(document.getElementById('cc-p-sup-semi')?.value) || 0;
-    const supPond = supCub + supSemi * 0.5;
-    // V/m² = valor promedio de ambos métodos / superficie ponderada
-    const vm2Ref  = supPond > 0 ? Math.round(window._cc_valProm / supPond) : 0;
+    // Superficie ponderada: cubiertos 100% + semicubiertos 50%
+    // Leer del DOM primero, fallback a propiedad guardada en Firebase
+    const prop = window._tasacionActual?.propiedad || {};
+    const supCub  = parseFloat(document.getElementById('cc-p-sup-cub')?.value)  || prop.supCub  || 0;
+    const supSemi = parseFloat(document.getElementById('cc-p-sup-semi')?.value) || prop.supSemi || 0;
+    const supPond = Math.round((supCub + supSemi * 0.5) * 10) / 10;
 
-    // Navegar a LP (usar pantallas cc)
+    // V/m² predeterminado = valor promedio ambos métodos / superficie ponderada
+    const vm2Ref = supPond > 0 ? Math.round(valProm / supPond) : 0;
+
+    // Navegar a LP
     showCC_screen('lp-screen');
-    // Cambiar el back-button para volver a cc-op2
     const backBtn = document.querySelector('#lp-screen .btn-back');
     if (backBtn) backBtn.onclick = () => showCC_screen('cc-op2-screen');
 
-    // Set superficie y vm2 de referencia
+    // Setear campos LP
     const lpSup = document.getElementById('lp-sup');
     const lpRef = document.getElementById('lp-vm2-ref');
-    if (lpSup && supPond) lpSup.value = supPond;
-    if (lpRef && vm2Ref) lpRef.value = vm2Ref;
+    if (lpSup) lpSup.value = supPond || '';
+    if (lpRef) lpRef.value = vm2Ref  || '';
 
     // Info de tasación
     const infoEl = document.getElementById('lp-tasacion-info');
