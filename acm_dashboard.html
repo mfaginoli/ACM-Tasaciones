@@ -4398,10 +4398,12 @@ ${allSlides}
         link: c.link || ''
       }));
 
-    // Superficie cubierta de la propiedad sujeto
+    // Superficie ponderada de la propiedad sujeto: cubiertos al 100% + semicubiertos al 50%
     const t = window._tasacionActual;
-    const supCub = t?.propiedad?.supCub || 0;
-    const vm2Ref = supCub > 0 ? Math.round(window._cc_valProm / supCub) : 0;
+    const supCub  = t?.propiedad?.supCub  || 0;
+    const supSemi = t?.propiedad?.supSemi || 0;
+    const supPond = supCub + supSemi * 0.5;
+    const vm2Ref  = supPond > 0 ? Math.round(window._cc_valProm / supPond) : 0;
 
     // Navegar a LP (usar pantallas cc)
     showCC_screen('lp-screen');
@@ -4412,7 +4414,7 @@ ${allSlides}
     // Set superficie y vm2 de referencia
     const lpSup = document.getElementById('lp-sup');
     const lpRef = document.getElementById('lp-vm2-ref');
-    if (lpSup && supCub) lpSup.value = supCub;
+    if (lpSup && supPond) lpSup.value = supPond;
     if (lpRef && vm2Ref) lpRef.value = vm2Ref;
 
     // Info de tasación
