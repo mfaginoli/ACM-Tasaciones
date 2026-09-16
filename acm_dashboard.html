@@ -1696,7 +1696,7 @@
         barrio: get('barrio'), direccion: get('direccion'),
         precio, supTotal: parseFloat(get('supTotal'))||null,
         supCub, supDesc: parseFloat(get('supDesc'))||null,
-        ant: parseInt(get('ant'))||null, dorm: parseInt(get('dorm'))||null,
+        ant: _antOrNull(get('ant')), dorm: parseInt(get('dorm'))||null,
         ban: parseInt(get('ban'))||null, estado: get('estado'),
         dias: parseInt(get('dias'))||null, viz: parseInt(get('viz'))||null,
         link: get('link'), vm2, doc: null, coch: 'No', planta: null, piso: null,
@@ -1771,6 +1771,9 @@
     document.getElementById('import-preview').style.display = 'block';
   };
 
+  // Antigüedad: 0 ("a estrenar") es un valor válido y debe preservarse; solo lo vacío/no numérico es null
+  const _antOrNull = (v) => { const n = parseInt(v); return Number.isNaN(n) ? null : n; };
+
   // Mapeo de columnas del CSV a campos internos
   const _mapCsvRow = (row) => {
     const get = (...keys) => {
@@ -1791,7 +1794,7 @@
       supTotal:  parseFloat(get('supTotal','sup. total','Sup. Total','sup_total','terreno','Sup. Terreno')) || null,
       supCub,
       supDesc:   parseFloat(get('supDesc','sup. desc.','Sup. Desc.','descubierta')) || null,
-      ant:       parseInt(get('ant','antigüedad','Antigüedad','antiguedad')) ?? null,
+      ant:       _antOrNull(get('ant','antigüedad','Antigüedad','antiguedad')),
       dorm:      parseInt(get('dorm','dormitorios','Dormitorios')) || null,
       ban:       parseInt(get('ban','baños','Baños','banos')) || null,
       estado:    get('estado','Estado') || '',
@@ -1976,7 +1979,7 @@
       supSemi: parseFloat(document.getElementById('f-sup-semi').value) || null,
       supDesc: parseFloat(document.getElementById('f-sup-desc').value) || null,
       tipo: document.getElementById('f-tipo').value || null,
-      ant: parseInt(document.getElementById('f-ant').value) ?? null,
+      ant: _antOrNull(document.getElementById('f-ant').value),
       dorm: parseInt(document.getElementById('f-dorm').value) || null,
       ban: parseInt(document.getElementById('f-ban').value) || null,
       coch: document.getElementById('f-coch').value,
@@ -2070,7 +2073,7 @@
       supSemi: parseFloat(document.getElementById('f-sup-semi').value) || null,
       supDesc: parseFloat(document.getElementById('f-sup-desc').value) || null,
       tipo: document.getElementById('f-tipo').value || null,
-      ant: parseInt(document.getElementById('f-ant').value) ?? null,
+      ant: _antOrNull(document.getElementById('f-ant').value),
       dorm: parseInt(document.getElementById('f-dorm').value) || null,
       ban: parseInt(document.getElementById('f-ban').value) || null,
       coch: document.getElementById('f-coch').value,
@@ -2337,7 +2340,7 @@
       supTerreno: parseFloat(document.getElementById('p-sup-terreno').value) || null,
       supJardin: parseFloat(document.getElementById('p-sup-jardin').value) || null,
       supHom: parseFloat(document.getElementById('p-sup-hom').value) || null,
-      ant: parseInt(document.getElementById('p-ant')?.value) || null,
+      ant: _antOrNull(document.getElementById('p-ant')?.value),
       estado: document.getElementById('p-estado')?.value || null,
       estadoNum: parseInt(document.getElementById('p-estado-num')?.value) || null,
       fotoUrl: document.getElementById('p-foto-url')?.value.trim() || null,
